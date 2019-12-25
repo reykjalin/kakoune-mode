@@ -3,11 +3,10 @@
 import * as vscode from 'vscode';
 
 import { spawn } from 'child_process';
+import { stringify } from 'querystring';
 
 interface IMessage {
 	readonly jsonrpc: string;
-
-	toString(): string;
 }
 
 class RPCMessage implements IMessage {
@@ -19,20 +18,24 @@ class RPCMessage implements IMessage {
 		this.method = method;
 		this.params = params;
 	}
-
-	toString() {
-		return JSON.stringify({
-			jsonrpc: this.jsonrpc,
-			method: this.method,
-			params: this.params,
-		});
-	}
 }
 
 class KeysMessage extends RPCMessage {
 	constructor(keys: string) {
 		keys = keys.replace('\n', '<ret>');
 		super('keys', [keys]);
+	}
+}
+
+class Cursor {
+	mode: string;
+	line: number;
+	column: number;
+
+	constructor(cursorParam: [string, { line: number, column: number }]) {
+		this.mode = cursorParam[0];
+		this.line = cursorParam[1].line;
+		this.column = cursorParam[1].column;
 	}
 }
 
@@ -100,13 +103,9 @@ export function activate(context: vscode.ExtensionContext) {
 				if (!vscode.window.activeTextEditor) {
 					return;
 				}
-				console.log(msg);
 				const activeEditor = vscode.window.activeTextEditor;
-				const column = msg.params[1].column;
-				const line = msg.params[1].line;
-				console.log('line:', line);
-				console.log('column:', column);
-				const cursorPos = new vscode.Position(line, column);
+				const cursor = new Cursor(msg.params);
+				const cursorPos = new vscode.Position(cursor.line, cursor.column);
 				activeEditor.selections = [new vscode.Selection(cursorPos, cursorPos)];
 			}
 		});
@@ -119,26 +118,21 @@ export function activate(context: vscode.ExtensionContext) {
 	overrideCommand(context, 'type', args => {
 		if (!args.text) { return; }
 
-		console.log(args.text);
 		const msg = new KeysMessage(args.text);
-		console.log(msg.toString());
-
-		kak.stdin.write(msg.toString());
+		kak.stdin.write(JSON.stringify(msg));
 	});
 
 	const sendEscape = vscode.commands.registerCommand('extension.send_escape', () => {
 		const msg = new KeysMessage('<esc>');
 
-		console.log(msg.toString());
-		kak.stdin.write(msg.toString());
+		kak.stdin.write(JSON.stringify(msg));
 	});
 	context.subscriptions.push(sendEscape);
 
 	const sendBackspace = vscode.commands.registerCommand('extension.send_backspace', () => {
 		const msg = new KeysMessage('<backspace>');
 
-		console.log(msg.toString());
-		kak.stdin.write(msg.toString());
+		kak.stdin.write(JSON.stringify(msg));
 	});
 	context.subscriptions.push(sendBackspace);
 
@@ -150,7 +144,7 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log(event.document.fileName);
 
 		const msg = new KeysMessage(`:e ${event.document.fileName}<ret>`);
-		kak.stdin.write(msg.toString());
+		kak.stdin.write(JSON.stringify(msg));
 	});
 }
 
