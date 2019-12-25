@@ -88,33 +88,37 @@ export function activate(context: vscode.ExtensionContext) {
 				const activeEditor = vscode.window.activeTextEditor;
 
 				const edits: vscode.TextEdit[] = [];
+				let selection: vscode.Selection | undefined = undefined;
 
 				// Lines are first by definition.
-				const lines: [[{ contents: string }]] = msg.params[0];
+				const lines: [[{ contents: string, face: { fg: string } }]] = msg.params[0];
 				lines.forEach((line, index) => {
 
 					const newContent: string = line.reduce(
 						(accumulator, currentValue) => {
+							console.log(JSON.stringify(currentValue));
+							if ('black' === currentValue.face.fg) {
+								const pos = new vscode.Position(index, accumulator.length);
+								selection = new vscode.Selection(pos, pos);
+							}
 							return accumulator + currentValue.contents;
 						},
 						''
 					);
 
 					const currentLine = activeEditor.document.lineAt(index);
-					const currentLineRange = currentLine.range;
-					edits.push(vscode.TextEdit.replace(currentLineRange, newContent.substr(0, newContent.lastIndexOf('\n'))));
+					const currentLineRange = currentLine.rangeIncludingLineBreak;
+					if (newContent !== currentLine.text) {
+						edits.push(vscode.TextEdit.replace(currentLineRange, newContent));
+					}
 				});
 				const workEdits = new vscode.WorkspaceEdit();
 				workEdits.set(activeEditor.document.uri, edits);
-				vscode.workspace.applyEdit(workEdits);
-			} else if ('set_cursor' === msg.method) {
-				if (!vscode.window.activeTextEditor) {
-					return;
-				}
-				const activeEditor = vscode.window.activeTextEditor;
-				const cursor = new Cursor(msg.params);
-				console.log(JSON.stringify(cursor));
-				console.log(JSON.stringify(activeEditor.selection));
+				vscode.workspace.applyEdit(workEdits).then(() => {
+					if (selection) {
+						activeEditor.selection = selection;
+					}
+				});
 			}
 		});
 	});
