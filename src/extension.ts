@@ -37,6 +37,14 @@ class Cursor {
 		this.line = cursorParam[1].line;
 		this.column = cursorParam[1].column;
 	}
+
+	getPos(): vscode.Position {
+		return new vscode.Position(this.line, this.column);
+	}
+
+	getSelection(): vscode.Selection {
+		return new vscode.Selection(this.getPos(), this.getPos());
+	}
 }
 
 // this method is called when your extension is activated
@@ -93,8 +101,8 @@ export function activate(context: vscode.ExtensionContext) {
 					);
 
 					const currentLine = activeEditor.document.lineAt(index);
-					const currentLineRange = currentLine.rangeIncludingLineBreak;
-					edits.push(vscode.TextEdit.replace(currentLineRange, newContent));
+					const currentLineRange = currentLine.range;
+					edits.push(vscode.TextEdit.replace(currentLineRange, newContent.substr(0, newContent.lastIndexOf('\n'))));
 				});
 				const workEdits = new vscode.WorkspaceEdit();
 				workEdits.set(activeEditor.document.uri, edits);
@@ -105,8 +113,8 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				const activeEditor = vscode.window.activeTextEditor;
 				const cursor = new Cursor(msg.params);
-				const cursorPos = new vscode.Position(cursor.line, cursor.column);
-				activeEditor.selections = [new vscode.Selection(cursorPos, cursorPos)];
+				console.log(JSON.stringify(cursor));
+				console.log(JSON.stringify(activeEditor.selection));
 			}
 		});
 	});
