@@ -88,7 +88,8 @@ export function activate(context: vscode.ExtensionContext) {
 				const activeEditor = vscode.window.activeTextEditor;
 
 				const edits: vscode.TextEdit[] = [];
-				let selection: vscode.Selection | undefined = undefined;
+				let selectionStart: vscode.Position | undefined = undefined;
+				let selectionEnd: vscode.Position | undefined = undefined;
 
 				// Lines are first by definition.
 				const lines: [[{ contents: string, face: { fg: string } }]] = msg.params[0];
@@ -97,9 +98,10 @@ export function activate(context: vscode.ExtensionContext) {
 					const newContent: string = line.reduce(
 						(accumulator, currentValue) => {
 							console.log(JSON.stringify(currentValue));
-							if ('black' === currentValue.face.fg) {
-								const pos = new vscode.Position(index, accumulator.length);
-								selection = new vscode.Selection(pos, pos);
+							if ('white' === currentValue.face.fg) {
+								selectionStart = new vscode.Position(index, accumulator.length);
+							} else if ('black' === currentValue.face.fg) {
+								selectionEnd = new vscode.Position(index, accumulator.length);
 							}
 							return accumulator + currentValue.contents;
 						},
@@ -115,8 +117,11 @@ export function activate(context: vscode.ExtensionContext) {
 				const workEdits = new vscode.WorkspaceEdit();
 				workEdits.set(activeEditor.document.uri, edits);
 				vscode.workspace.applyEdit(workEdits).then(() => {
-					if (selection) {
-						activeEditor.selection = selection;
+					if (selectionStart || selectionEnd) {
+						activeEditor.selection = new vscode.Selection(
+							selectionStart ? selectionStart : selectionEnd,
+							selectionEnd ? selectionEnd : selectionStart
+						);
 					}
 				});
 			}
