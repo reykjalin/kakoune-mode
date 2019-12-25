@@ -60,7 +60,8 @@ export function activate(context: vscode.ExtensionContext) {
 	spawn('kak', ['-clear']);
 
 	// Start kakoune
-	const kak = spawn('kak', ['-ui', 'json', '-s', 'vscode']);
+	const currentFile = vscode.window.activeTextEditor?.document.fileName || '';
+	const kak = spawn('kak', ['-ui', 'json', '-s', 'vscode', currentFile]);
 	kak.stdout.on('data', (data) => {
 		console.log(`${data}`);
 	});
@@ -93,7 +94,18 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log(msg.toString());
 		kak.stdin.write(msg.toString());
 	});
-	context.subscriptions.push(sendEscape);
+	context.subscriptions.push(sendBackspace);
+
+	vscode.window.onDidChangeActiveTextEditor(event => {
+		if (!event) {
+			return;
+		}
+
+		console.log(event.document.fileName);
+
+		const msg = new KeysMessage(`:e ${event.document.fileName}<ret>`);
+		kak.stdin.write(msg.toString());
+	});
 }
 
 function overrideCommand(
