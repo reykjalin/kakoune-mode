@@ -43,6 +43,9 @@ export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "kakoune-mode" is now active!');
+	if (vscode.window.activeTextEditor) {
+		vscode.window.activeTextEditor.options = { cursorStyle: vscode.TextEditorCursorStyle.Block };
+	}
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
@@ -63,7 +66,50 @@ export function activate(context: vscode.ExtensionContext) {
 	const currentFile = vscode.window.activeTextEditor?.document.fileName || '';
 	const kak = spawn('kak', ['-ui', 'json', '-s', 'vscode', currentFile]);
 	kak.stdout.on('data', (data) => {
-		console.log(`${data}`);
+		// console.log(`${data}`);
+
+		`${data}`.split('\n').filter(message => '' !== message).forEach(message => {
+			const msg = JSON.parse(message);
+			if ('draw' === msg.method) {
+				if (!vscode.window.activeTextEditor) {
+					return;
+				}
+				const activeEditor = vscode.window.activeTextEditor;
+
+				const edits: vscode.TextEdit[] = [];
+
+				// Lines are first by definition.
+				const lines: [[{ contents: string }]] = msg.params[0];
+				lines.forEach((line, index) => {
+
+					const newContent: string = line.reduce(
+						(accumulator, currentValue) => {
+							return accumulator + currentValue.contents;
+						},
+						''
+					);
+
+					const currentLine = activeEditor.document.lineAt(index);
+					const currentLineRange = currentLine.rangeIncludingLineBreak;
+					edits.push(vscode.TextEdit.replace(currentLineRange, newContent));
+				});
+				const workEdits = new vscode.WorkspaceEdit();
+				workEdits.set(activeEditor.document.uri, edits);
+				vscode.workspace.applyEdit(workEdits);
+			} else if ('set_cursor' === msg.method) {
+				if (!vscode.window.activeTextEditor) {
+					return;
+				}
+				console.log(msg);
+				const activeEditor = vscode.window.activeTextEditor;
+				const column = msg.params[1].column;
+				const line = msg.params[1].line;
+				console.log('line:', line);
+				console.log('column:', column);
+				const cursorPos = new vscode.Position(line, column);
+				activeEditor.selections = [new vscode.Selection(cursorPos, cursorPos)];
+			}
+		});
 	});
 
 	kak.stderr.on('data', (data) => {
