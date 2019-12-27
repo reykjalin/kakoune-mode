@@ -3,29 +3,7 @@
 import * as vscode from 'vscode';
 
 import { spawn } from 'child_process';
-import { stringify } from 'querystring';
-
-interface IMessage {
-	readonly jsonrpc: string;
-}
-
-class RPCMessage implements IMessage {
-	jsonrpc: string = '2.0';
-	method: string;
-	params: [any];
-
-	constructor(method: string, params: [any]) {
-		this.method = method;
-		this.params = params;
-	}
-}
-
-class KeysMessage extends RPCMessage {
-	constructor(keys: string) {
-		keys = keys.replace('\n', '<ret>');
-		super('keys', [keys]);
-	}
-}
+import { KeysMessage } from './rpc';
 
 class Cursor {
 	mode: string;
