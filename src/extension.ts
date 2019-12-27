@@ -89,7 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 				const edits: vscode.TextEdit[] = [];
 				let selectionStart: vscode.Position | undefined = undefined;
-				let selectionEnd: vscode.Position | undefined = undefined;
+				let cursorPosition: vscode.Position | undefined = undefined;
 
 				// Lines are first by definition.
 				const lines: [[{ contents: string, face: { fg: string } }]] = msg.params[0];
@@ -99,9 +99,13 @@ export function activate(context: vscode.ExtensionContext) {
 						(accumulator, currentValue) => {
 							console.log(JSON.stringify(currentValue));
 							if ('white' === currentValue.face.fg) {
-								selectionStart = new vscode.Position(index, accumulator.length);
+								if (cursorPosition) {
+									selectionStart = new vscode.Position(index, accumulator.length + currentValue.contents.length);
+								} else {
+									selectionStart = new vscode.Position(index, accumulator.length);
+								}
 							} else if ('black' === currentValue.face.fg) {
-								selectionEnd = new vscode.Position(index, accumulator.length);
+								cursorPosition = new vscode.Position(index, accumulator.length);
 							}
 							return accumulator + currentValue.contents;
 						},
@@ -117,10 +121,10 @@ export function activate(context: vscode.ExtensionContext) {
 				const workEdits = new vscode.WorkspaceEdit();
 				workEdits.set(activeEditor.document.uri, edits);
 				vscode.workspace.applyEdit(workEdits).then(() => {
-					if (selectionStart || selectionEnd) {
+					if (selectionStart || cursorPosition) {
 						activeEditor.selection = new vscode.Selection(
-							selectionStart ? selectionStart : selectionEnd,
-							selectionEnd ? selectionEnd : selectionStart
+							selectionStart ? selectionStart : cursorPosition,
+							cursorPosition ? cursorPosition : selectionStart
 						);
 					}
 				});
