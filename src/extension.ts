@@ -1,9 +1,10 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { Position, Selection } from 'vscode';
 
 import { spawn } from 'child_process';
-import { KeysMessage } from './rpc';
+import { KeysMessage, handleIncomingCommand } from './rpc';
 
 class Cursor {
 	mode: string;
@@ -16,12 +17,12 @@ class Cursor {
 		this.column = cursorParam[1].column;
 	}
 
-	getPos(): vscode.Position {
-		return new vscode.Position(this.line, this.column);
+	getPos(): Position {
+		return new Position(this.line, this.column);
 	}
 
-	getSelection(): vscode.Selection {
-		return new vscode.Selection(this.getPos(), this.getPos());
+	getSelection(): Selection {
+		return new Selection(this.getPos(), this.getPos());
 	}
 }
 
@@ -54,61 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Start kakoune
 	const currentFile = vscode.window.activeTextEditor?.document.fileName || '';
 	const kak = spawn('kak', ['-ui', 'json', '-s', 'vscode', currentFile]);
-	kak.stdout.on('data', (data) => {
-		// console.log(`${data}`);
-
-		`${data}`.split('\n').filter(message => '' !== message).forEach(message => {
-			const msg = JSON.parse(message);
-			if ('draw' === msg.method) {
-				if (!vscode.window.activeTextEditor) {
-					return;
-				}
-				const activeEditor = vscode.window.activeTextEditor;
-
-				const edits: vscode.TextEdit[] = [];
-				let selectionStart: vscode.Position | undefined = undefined;
-				let cursorPosition: vscode.Position | undefined = undefined;
-
-				// Lines are first by definition.
-				const lines: [[{ contents: string, face: { fg: string } }]] = msg.params[0];
-				lines.forEach((line, index) => {
-
-					const newContent: string = line.reduce(
-						(accumulator, currentValue) => {
-							console.log(JSON.stringify(currentValue));
-							if ('white' === currentValue.face.fg) {
-								if (cursorPosition) {
-									selectionStart = new vscode.Position(index, accumulator.length + currentValue.contents.length);
-								} else {
-									selectionStart = new vscode.Position(index, accumulator.length);
-								}
-							} else if ('black' === currentValue.face.fg) {
-								cursorPosition = new vscode.Position(index, accumulator.length);
-							}
-							return accumulator + currentValue.contents;
-						},
-						''
-					);
-
-					const currentLine = activeEditor.document.lineAt(index);
-					const currentLineRange = currentLine.rangeIncludingLineBreak;
-					if (newContent !== currentLine.text) {
-						edits.push(vscode.TextEdit.replace(currentLineRange, newContent));
-					}
-				});
-				const workEdits = new vscode.WorkspaceEdit();
-				workEdits.set(activeEditor.document.uri, edits);
-				vscode.workspace.applyEdit(workEdits).then(() => {
-					if (selectionStart || cursorPosition) {
-						activeEditor.selection = new vscode.Selection(
-							selectionStart ? selectionStart : cursorPosition,
-							cursorPosition ? cursorPosition : selectionStart
-						);
-					}
-				});
-			}
-		});
-	});
+	kak.stdout.on('data', handleIncomingCommand);
 
 	kak.stderr.on('data', (data) => {
 		vscode.window.showErrorMessage(`Failed to start Kakoune daemon: ${data}`);
