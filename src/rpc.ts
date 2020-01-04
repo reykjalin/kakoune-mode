@@ -184,14 +184,20 @@ const linesToSelections = (lines: line[]): Selection[] => {
     lines.forEach((line, index) => {
         line.forEach(atom => {
             if ('black' === atom.face.fg) {
-                // cursor pos
-                cursorPos = new Position(index, pos);
+                // Add the cursor position if it hasn't been defined already.
+                if (!cursorPos) {
+                    cursorPos = new Position(index, pos);
+                }
             } else if ('white' === atom.face.fg) {
                 // selection
                 if (cursorPos) {
                     selectionStart = new Position(index, pos + atom.contents.length);
                 } else {
-                    selectionStart = new Position(index, pos);
+                    // Only move the selection start if it hasn't been defined already.
+                    // This is beause the selection may have multiple lines in it.
+                    if (!selectionStart) {
+                        selectionStart = new Position(index, pos);
+                    }
                 }
             }
             pos += atom.contents.length;
