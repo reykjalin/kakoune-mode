@@ -1,30 +1,9 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { Position, Selection } from 'vscode';
 
 import { spawn } from 'child_process';
 import { KeysMessage, handleIncomingCommand } from './rpc';
-
-class Cursor {
-	mode: string;
-	line: number;
-	column: number;
-
-	constructor(cursorParam: [string, { line: number, column: number }]) {
-		this.mode = cursorParam[0];
-		this.line = cursorParam[1].line;
-		this.column = cursorParam[1].column;
-	}
-
-	getPos(): Position {
-		return new Position(this.line, this.column);
-	}
-
-	getSelection(): Selection {
-		return new Selection(this.getPos(), this.getPos());
-	}
-}
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
