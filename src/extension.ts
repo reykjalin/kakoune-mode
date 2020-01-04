@@ -32,22 +32,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "kakoune-mode" is now active!');
 	if (vscode.window.activeTextEditor) {
 		vscode.window.activeTextEditor.options = { cursorStyle: vscode.TextEditorCursorStyle.Block };
 	}
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('extension.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World!');
-	});
-
-	context.subscriptions.push(disposable);
 
 	// Clear any previously used instances.
 	spawn('kak', ['-clear']);
@@ -58,9 +45,10 @@ export function activate(context: vscode.ExtensionContext) {
 	kak.stdout.on('data', handleIncomingCommand);
 
 	kak.stderr.on('data', (data) => {
-		vscode.window.showErrorMessage(`Failed to start Kakoune daemon: ${data}`);
+		vscode.window.showErrorMessage(`Kakoune encountered an error: ${data}`);
 	});
 
+	// Override the typing command when in a text document.
 	overrideCommand(context, 'type', args => {
 		if (!args.text) { return; }
 
@@ -68,6 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
 		kak.stdin.write(JSON.stringify(msg));
 	});
 
+	// Override the escape command.
 	const sendEscape = vscode.commands.registerCommand('extension.send_escape', () => {
 		const msg = new KeysMessage('<esc>');
 
@@ -75,6 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(sendEscape);
 
+	// Override the backspace command.
 	const sendBackspace = vscode.commands.registerCommand('extension.send_backspace', () => {
 		const msg = new KeysMessage('<backspace>');
 
@@ -82,6 +72,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(sendBackspace);
 
+	// Make sure a documents are opened in kakoune.
 	vscode.window.onDidChangeActiveTextEditor(event => {
 		if (!event) {
 			return;

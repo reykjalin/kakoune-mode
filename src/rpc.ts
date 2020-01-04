@@ -48,10 +48,16 @@ type face = {
     bg: string,
 };
 
+/**
+ * Handle incoming commands from Kakoune.
+ * 
+ * @param data The message sent from Kakoune via stdout.
+ */
 export const handleIncomingCommand = (data: { type: string, data: [] }): void => {
     const dataStr = `${data}`;
     const command = getDrawCommand(dataStr);
 
+    // If no editor is selected, just return; no need to handle the data.
     const { activeTextEditor } = vscode.window;
     if (!activeTextEditor) {
         return;
@@ -67,6 +73,7 @@ export const handleIncomingCommand = (data: { type: string, data: [] }): void =>
     // Prepare selections in editor.
     const selections = linesToSelections(newLines);
 
+    // Apply the edits and make the selections.
     vscode.workspace.applyEdit(workEdits).then(() => {
         if (selections.length > 0) {
             activeTextEditor.selections = selections;
@@ -78,16 +85,31 @@ export const handleIncomingCommand = (data: { type: string, data: [] }): void =>
  * Return the most recent draw command.
  * 
  * @param msg JSON rpc message.
+ * 
+ * @returns The newest draw command.
  */
 const getDrawCommand = (msg: string): drawCommand[] => {
     return msg.split('\n').
+        // No empty messages.
         filter((msg: string): boolean => '' !== msg).
+        // Parse to a JS object.
         map((msg: string): rpcmsg => JSON.parse(msg)).
+        // Only get draw messages.
         filter((msg: rpcmsg): boolean => 'draw' === msg.method).
+        // Retrieve the parameters.
         map((msg: rpcmsg): drawCommand => msg.params).
+        // Only the last draw command.
         slice(-1);
 };
 
+/**
+ * Reduces draw information for a whole document to an array of lines.
+ * 
+ * @param accumulatedLines The list of lines.
+ * @param currentCommand   The command to reduce to a line.
+ * 
+ * @returns A list of lines to draw.
+ */
 const commandToLines = (accumulatedLines: line[], currentCommand: drawCommand): line[] => {
     return [
         ...accumulatedLines,
@@ -95,6 +117,14 @@ const commandToLines = (accumulatedLines: line[], currentCommand: drawCommand): 
     ];
 };
 
+/**
+ * Map function used to map lines to a VSCode TextEdit.
+ * 
+ * @param line  Line to turn into an edit.
+ * @param index Index of the current line.
+ * 
+ * @returns A VSCode TextEdit.
+ */
 const lineToEdit = (line: line, index: number): TextEdit | undefined => {
     const { activeTextEditor } = vscode.window;
     if (!activeTextEditor) {
@@ -111,6 +141,14 @@ const lineToEdit = (line: line, index: number): TextEdit | undefined => {
     return TextEdit.replace(documentLineRange, newContent);
 };
 
+/**
+ * Reducer that merges atoms that form a line into a string that represents the line.
+ * 
+ * @param lineContent The line content.
+ * @param currentAtom The atom to be added to the line content.
+ * 
+ * @returns The line content from all the Atoms in the line.
+ */
 const mergeLineContents = (lineContent: string, currentAtom: atom): string => lineContent + currentAtom.contents;
 
 /**
@@ -118,6 +156,8 @@ const mergeLineContents = (lineContent: string, currentAtom: atom): string => li
  * this when using .filter() on an array.
  * 
  * @param edits List of edits.
+ * 
+ * @returns A list of valid VSCode TextEdits.
  */
 const onlyEdits = (edits: (TextEdit | undefined)[]): TextEdit[] => {
     const validEdits: TextEdit[] = [];
@@ -125,10 +165,17 @@ const onlyEdits = (edits: (TextEdit | undefined)[]): TextEdit[] => {
         if (undefined !== edit) {
             validEdits.push(edit);
         }
-    })
+    });
     return validEdits;
 };
 
+/**
+ * Convert a list of lines to a list of VSCode Selections.
+ * 
+ * @param lines The list of lines.
+ * 
+ * @returns A list of VSCode Selections corresponding to the input lines.
+ */
 const linesToSelections = (lines: line[]): Selection[] => {
     let cursorPos: Position | undefined = undefined;
     let selectionStart: Position | undefined = undefined;
