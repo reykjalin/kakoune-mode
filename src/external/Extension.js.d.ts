@@ -1,6 +1,5 @@
 
 export function handleCommand( command: string ): void;
-export function showError( error: string ): void;
 export let currentMode: string;
 
 export class Mode {

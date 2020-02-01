@@ -7,9 +7,9 @@ import { ChildProcess, spawn } from 'child_process';
 import {
 	getMode,
 	handleCommand,
-	showError,
 } from './external/Extension.js';
 import { createKeysMessage } from './external/Rpc.js';
+import { showError } from './external/VSCode.js';
 
 const startKakoune = (): ChildProcess => {
 	// Clear any previously used instances.

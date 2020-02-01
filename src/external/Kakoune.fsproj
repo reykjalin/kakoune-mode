@@ -4,8 +4,9 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="VSCode.fs" />
+    <Compile Include="Kakoune.fs" />
     <Compile Include="Rpc.fs" />
+    <Compile Include="VSCode.fs" />
     <Compile Include="Extension.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

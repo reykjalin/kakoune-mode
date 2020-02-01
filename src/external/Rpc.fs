@@ -4,6 +4,8 @@ open Fable.Core.JsInterop
 open Fable.Import
 open Fable.Core
 
+open Kakoune
+
 type KeysRpcMessage = string list
 
 type RpcMessage =
@@ -14,6 +16,7 @@ type RpcMessage =
 type IRpc =
     abstract getMethod: rpcMsg:string -> string
     abstract getMode: rpcMsg:string -> string
+    abstract getLines: rpcMsg:string -> string
 
 [<ImportAll("./rpc-helpers.js")>]
 let rpc: IRpc = jsNative

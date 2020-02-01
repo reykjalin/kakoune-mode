@@ -3,8 +3,6 @@
 open Rpc
 open VSCode
 
-let showError (error: string) = window.showErrorMessage error
-
 let hello (name: string) = "Hello " + name
 
 type Mode =
@@ -27,13 +25,10 @@ let parseDrawStatusCommand command =
     | Normal -> showError "in normal mode"
     | Insert -> showError "in insert mode"
 
-let drawMissingLines command =
-    showError "Drawing missing lines"
-    showError (sprintf "command received: %s" command)
-
 let parseDrawCommand command =
+    showError "Parsing draw command"
     match mode with
-    | Normal -> drawMissingLines command
+    | Normal -> doDraw command
     | Insert -> ()
 
 let rec parseCommands (commands: string list) =
