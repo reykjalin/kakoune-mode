@@ -1,13 +1,39 @@
 {
 	"rules": {
-		"no-string-throw": true,
-		"no-unused-expression": true,
-		"no-duplicate-variable": true,
-		"curly": true,
+		"align": true,
+		"arrow-return-shorthand": true,
 		"class-name": true,
+		"curly": true,
+		"eofline": true,
+		"indent": [
+			true,
+			"tabs",
+			4
+		],
+		"newline-per-chained-call": true,
+		"no-consecutive-blank-lines": true,
+		"no-duplicate-variable": true,
+		"no-magic-numbers": true,
+		"no-string-throw": true,
+		"no-trailing-whitespace": true,
+		"no-unused-expression": true,
+		"ordered-imports": true,
+		"prefer-object-spread": true,
+		"prefer-const": true,
+		"space-within-parens": [
+			true,
+			1
+		],
 		"semicolon": [
 			true,
 			"always"
+		],
+		"trailing-comma": [
+			true,
+			{
+				"single": "never",
+				"multiline": "always"
+			}
 		],
 		"triple-equals": true
 	},

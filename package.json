@@ -40,7 +40,8 @@
 		"pretest": "npm run compile",
 		"test": "node ./out/test/runTest.js",
 		"build": "fable-splitter --config splitter.config.js --commonjs",
-		"fs:watch": "npm run build -- --watch"
+		"fs:watch": "npm run build -- --watch",
+		"lint": "tslint -p ./tsconfig.json"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.1",
