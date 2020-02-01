@@ -4,7 +4,11 @@ import * as vscode from 'vscode';
 
 import { ChildProcess, spawn } from 'child_process';
 
-import { handleCommand, showError } from './external/Extension.js';
+import {
+	getMode,
+	handleCommand,
+	showError,
+} from './external/Extension.js';
 import { createKeysMessage } from './external/Rpc.js';
 
 const startKakoune = (): ChildProcess => {
@@ -83,6 +87,9 @@ const overrideCommand = (
 			return vscode.commands.executeCommand( 'default:' + command, args );
 		}
 
+		if ( 'Insert' === getMode().name ) {
+			vscode.commands.executeCommand( 'default:' + command, args );
+		}
 		return callback( args );
 	} );
 	context.subscriptions.push( disposable );

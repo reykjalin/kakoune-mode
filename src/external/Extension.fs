@@ -8,22 +8,24 @@ let showError (error: string) = window.showErrorMessage error
 let hello (name: string) = "Hello " + name
 
 type Mode =
-    | Normal of string
-    | Insert of string
+    | Normal
+    | Insert
 
 let createMode mode =
     match mode with
-    | "insert" -> Insert mode
-    | _ -> Normal mode
+    | "insert" -> Insert
+    | _ -> Normal
 
 let mutable mode = createMode "normal"
+
+let getMode (_: unit) = mode
 
 let parseDrawStatusCommand command =
     mode <- createMode (rpc.getMode command)
 
     match mode with
-    | Normal mode -> showError "in normal mode"
-    | Insert mode -> showError "in insert mode"
+    | Normal -> showError "in normal mode"
+    | Insert -> showError "in insert mode"
 
 let drawMissingLines command =
     showError "Drawing missing lines"
@@ -31,8 +33,8 @@ let drawMissingLines command =
 
 let parseDrawCommand command =
     match mode with
-    | Normal mode -> drawMissingLines command
-    | Insert mode -> ()
+    | Normal -> drawMissingLines command
+    | Insert -> ()
 
 let rec parseCommands (commands: string list) =
     match commands with
