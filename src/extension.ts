@@ -3,9 +3,9 @@
 import * as vscode from 'vscode';
 
 import { ChildProcess, spawn } from 'child_process';
-import { KeysMessage } from './rpc';
 
 import { handleCommand, showError } from './external/Extension.js';
+import { createKeysMessage } from './external/Rpc.js';
 
 const startKakoune = (): ChildProcess => {
 	// Clear any previously used instances.
@@ -35,22 +35,20 @@ export const activate = ( context: vscode.ExtensionContext ) => {
 	overrideCommand( context, 'type', args => {
 		if ( !args.text ) { return; }
 
-		const msg = new KeysMessage( args.text );
+		const msg = createKeysMessage( args.text );
 		kak.stdin.write( JSON.stringify( msg ) );
 	} );
 
 	// Override the escape command.
 	const sendEscape = vscode.commands.registerCommand( 'extension.send_escape', () => {
-		const msg = new KeysMessage( '<esc>' );
-
+		const msg = createKeysMessage( '<esc>' );
 		kak.stdin.write( JSON.stringify( msg ) );
 	} );
 	context.subscriptions.push( sendEscape );
 
 	// Override the backspace command.
 	const sendBackspace = vscode.commands.registerCommand( 'extension.send_backspace', () => {
-		const msg = new KeysMessage( '<backspace>' );
-
+		const msg = createKeysMessage( '<backspace>' );
 		kak.stdin.write( JSON.stringify( msg ) );
 	} );
 	context.subscriptions.push( sendBackspace );
@@ -63,7 +61,7 @@ export const activate = ( context: vscode.ExtensionContext ) => {
 
 		console.log( event.document.fileName );
 
-		const msg = new KeysMessage( `:e ${event.document.fileName}<ret>` );
+		const msg = createKeysMessage( `:e ${event.document.fileName}<ret>` );
 		kak.stdin.write( JSON.stringify( msg ) );
 	} );
 };

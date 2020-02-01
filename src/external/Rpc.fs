@@ -15,7 +15,7 @@ type IRpc =
     abstract getMethod: rpcMsg:string -> string
     abstract getMode: rpcMsg:string -> string
 
-[<ImportAll("./rpc.js")>]
+[<ImportAll("./rpc-helpers.js")>]
 let rpc: IRpc = jsNative
 
 let create method ``params`` =
