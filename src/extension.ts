@@ -2,8 +2,21 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 
-import { spawn } from 'child_process';
-import { KeysMessage, handleIncomingCommand } from './rpc';
+import { spawn, ChildProcess } from 'child_process';
+import { KeysMessage } from './rpc';
+
+import { handleCommand, showError } from './external/Extension.js';
+
+const startKakoune = (): ChildProcess => {
+	// Clear any previously used instances.
+	spawn('kak', ['-clear']);
+
+	const currentFile = vscode.window.activeTextEditor?.document.fileName || '';
+	const kak = spawn('kak', ['-ui', 'json', '-s', 'vscode', currentFile]);
+	kak.stdout.on('data', handleCommand);
+	kak.stderr.on('data', showError);
+	return kak;
+}
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -15,17 +28,8 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.activeTextEditor.options = { cursorStyle: vscode.TextEditorCursorStyle.Block };
 	}
 
-	// Clear any previously used instances.
-	spawn('kak', ['-clear']);
-
 	// Start kakoune
-	const currentFile = vscode.window.activeTextEditor?.document.fileName || '';
-	const kak = spawn('kak', ['-ui', 'json', '-s', 'vscode', currentFile]);
-	kak.stdout.on('data', handleIncomingCommand);
-
-	kak.stderr.on('data', (data) => {
-		vscode.window.showErrorMessage(`Kakoune encountered an error: ${data}`);
-	});
+	const kak = startKakoune();
 
 	// Override the typing command when in a text document.
 	overrideCommand(context, 'type', args => {
