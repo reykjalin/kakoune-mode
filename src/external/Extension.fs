@@ -26,7 +26,6 @@ let parseDrawStatusCommand command =
     | Insert -> showError "in insert mode"
 
 let parseDrawCommand command =
-    showError "Parsing draw command"
     match mode with
     | Normal -> doDraw command
     | Insert -> ()

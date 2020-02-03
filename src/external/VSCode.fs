@@ -6,14 +6,44 @@ open Thoth.Json
 open Rpc
 open Kakoune
 
+type IVSCodePosition =
+    abstract character: int with get, set
+    abstract line: int with get, set
+
+type IVSCodePositionStatic =
+    [<Emit("new $0($1, $2)")>]
+    abstract Create: int * int -> IVSCodePosition
+
+[<Import("Position", "vscode")>]
+let Position: IVSCodePositionStatic = jsNative
+
+type IVSCodeSelection =
+    abstract active: IVSCodePosition
+    abstract anchor: IVSCodePosition
+    abstract ``end``: IVSCodePosition
+    abstract start: IVSCodePosition
+
+type IVScodeSelectionStatic =
+    [<Emit("new $0($1, $2)")>]
+    abstract Create: IVSCodePosition * IVSCodePosition -> IVSCodeSelection
+
+[<Import("Selection", "vscode")>]
+let Selection: IVScodeSelectionStatic = jsNative
+
+type IVScodeTextEditor =
+    abstract selection: IVSCodeSelection with get, set
+    abstract selections: IVSCodeSelection list with get, set
+
 type IVSCodeWindow =
     abstract showErrorMessage: message:string -> unit
+    abstract activeTextEditor: IVScodeTextEditor
 
 type IVSCode =
     abstract window: IVSCodeWindow with get, set
 
 [<Import("*", "vscode")>]
 let vscode: IVSCode = jsNative
+
 
 let window = vscode.window
 
@@ -45,11 +75,14 @@ let rec findCursor (lines: Line list) =
     | [] -> None
 
 let drawSelections (command: string) =
-    showError (rpc.getLines command)
+    // showError (rpc.getLines command)
     match (Decode.Auto.fromString<Line list> (rpc.getLines command)) with
     | Ok o ->
         match findCursor o with
-        | Some value -> showError (sprintf "Cursor is at %d" value)
+        | Some value ->
+            let pos = Position.Create(0, value)
+            let sel = Selection.Create(pos, pos)
+            window.activeTextEditor.selection <- sel
         | None -> showError "no cursor found"
     | Error e -> showError e
 
