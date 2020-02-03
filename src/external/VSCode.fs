@@ -1,51 +1,30 @@
 module VSCode
 
 open Fable.Core
+open Fable.Core.JS
 open Thoth.Json
 
 open Rpc
 open Kakoune
-
-type IVSCodePosition =
-    abstract character: int with get, set
-    abstract line: int with get, set
-
-type IVSCodePositionStatic =
-    [<Emit("new $0($1, $2)")>]
-    abstract Create: int * int -> IVSCodePosition
+open VSCodeTypes
 
 [<Import("Position", "vscode")>]
 let Position: IVSCodePositionStatic = jsNative
 
-type IVSCodeSelection =
-    abstract active: IVSCodePosition
-    abstract anchor: IVSCodePosition
-    abstract ``end``: IVSCodePosition
-    abstract start: IVSCodePosition
-
-type IVScodeSelectionStatic =
-    [<Emit("new $0($1, $2)")>]
-    abstract Create: IVSCodePosition * IVSCodePosition -> IVSCodeSelection
-
 [<Import("Selection", "vscode")>]
 let Selection: IVScodeSelectionStatic = jsNative
 
-type IVScodeTextEditor =
-    abstract selection: IVSCodeSelection with get, set
-    abstract selections: IVSCodeSelection list with get, set
+[<Import("TextEdit", "vscode")>]
+let TextEdit: IVSCodeTextEditStatic = jsNative
 
-type IVSCodeWindow =
-    abstract showErrorMessage: message:string -> unit
-    abstract activeTextEditor: IVScodeTextEditor
-
-type IVSCode =
-    abstract window: IVSCodeWindow with get, set
+[<Import("WorkspaceEdit", "vscode")>]
+let WorkspaceEdit: IVSCodeWorkspaceEditStatic = jsNative
 
 [<Import("*", "vscode")>]
 let vscode: IVSCode = jsNative
 
-
 let window = vscode.window
+let activeTextEditor = window.activeTextEditor
 
 let showError (error: string) = window.showErrorMessage error
 
@@ -74,9 +53,11 @@ let rec findCursor (lines: Line list) =
         | None -> findCursor tail
     | [] -> None
 
+let getLines command = Decode.Auto.fromString<Line list> (rpc.getLines command)
+
 let drawSelections (command: string) =
     // showError (rpc.getLines command)
-    match (Decode.Auto.fromString<Line list> (rpc.getLines command)) with
+    match getLines command with
     | Ok o ->
         match findCursor o with
         | Some value ->
@@ -86,8 +67,26 @@ let drawSelections (command: string) =
         | None -> showError "no cursor found"
     | Error e -> showError e
 
-let drawMissingLines (command: string) = ()
+let textAtLine (i: int): string = (activeTextEditor.document.lineAt i).text
+
+let drawMissingLines (command: string) =
+    match getLines command with
+    | Ok o ->
+        showError "Drawing missing lines"
+        o
+        |> List.mapi (fun i l ->
+            let text =
+                l
+                |> List.map (fun l -> l.contents)
+                |> List.fold (+) ""
+
+            showError (sprintf "from kak: '%s'" text)
+            showError (sprintf "from code: '%s'" (textAtLine i))
+
+            if ((textAtLine i) <> text) then showError "different" else showError "same")
+        |> ignore
+    | Error e -> showError e
 
 let doDraw (command: string) =
-    drawSelections command
     drawMissingLines command
+    drawSelections command

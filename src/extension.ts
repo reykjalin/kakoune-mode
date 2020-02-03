@@ -54,6 +54,11 @@ export const activate = ( context: vscode.ExtensionContext ) => {
 	const sendBackspace = vscode.commands.registerCommand( 'extension.send_backspace', () => {
 		const msg = createKeysMessage( '<backspace>' );
 		kak.stdin.write( JSON.stringify( msg ) );
+
+		// Make sure to erase character when in insert mode.
+		if ( 'Insert' === getMode().name ) {
+			vscode.commands.executeCommand( 'deleteLeft' );
+		}
 	} );
 	context.subscriptions.push( sendBackspace );
 

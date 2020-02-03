@@ -6,6 +6,7 @@
   <ItemGroup>
     <Compile Include="Kakoune.fs" />
     <Compile Include="Rpc.fs" />
+    <Compile Include="VSCodeTypes.fs" />
     <Compile Include="VSCode.fs" />
     <Compile Include="Extension.fs" />
   </ItemGroup>

@@ -18,12 +18,7 @@ let mutable mode = createMode "normal"
 
 let getMode (_: unit) = mode
 
-let parseDrawStatusCommand command =
-    mode <- createMode (rpc.getMode command)
-
-    match mode with
-    | Normal -> showError "in normal mode"
-    | Insert -> showError "in insert mode"
+let parseDrawStatusCommand command = mode <- createMode (rpc.getMode command)
 
 let parseDrawCommand command =
     match mode with
