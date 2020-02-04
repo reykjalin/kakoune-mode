@@ -11,5 +11,5 @@
     <Compile Include="VSCode.fs" />
     <Compile Include="Extension.fs" />
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
+  <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

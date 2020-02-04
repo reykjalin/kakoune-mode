@@ -6,5 +6,5 @@ node_modules
 .ionide
 .paket
 
-src/external/bin
-src/external/obj
+src/bin
+src/obj

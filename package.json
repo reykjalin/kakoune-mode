@@ -12,7 +12,7 @@
 	"activationEvents": [
 		"*"
 	],
-	"main": "./out/external/Extension.js",
+	"main": "./out/Extension.js",
 	"contributes": {
 		"commands": [
 			{
@@ -35,12 +35,11 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./ && npm run build",
-		"watch": "tsc -watch -p ./",
+		"compile": "npm run build",
+		"watch": "npm run build -- --watch",
 		"pretest": "npm run compile",
 		"test": "node ./out/test/runTest.js",
 		"build": "fable-splitter --config splitter.config.js --commonjs",
-		"fs:watch": "npm run build -- --watch",
 		"lint": "tslint -p ./tsconfig.json"
 	},
 	"devDependencies": {
