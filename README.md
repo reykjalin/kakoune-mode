@@ -54,11 +54,11 @@ Finally, it's a pretty standard npm build process: `npm install && npm run build
 
 # Current functionality
 
-- You can open a file
+- You can open a file.
+- The cursor can be moved around with the standard movement keys for Kakoune.
 
 # Upcoming functionality
 
-1. Correct cursor movement.
 1. Sync text from Kakoune to VSCode after changes.
 1. Correct primary selection.
 1. Correct multiple selections.

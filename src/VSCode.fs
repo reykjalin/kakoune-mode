@@ -45,12 +45,12 @@ let rec findCursorInLine (line: Line) =
         |> Some
     | None -> None
 
-let rec findCursor (lines: Line list) =
+let rec findCursor (lines: Line list) (lineNumber: int) =
     match lines with
     | head :: tail ->
         match findCursorInLine head with
-        | Some value -> Some value
-        | None -> findCursor tail
+        | Some value -> Some(Position.Create(lineNumber, value))
+        | None -> findCursor tail (lineNumber + 1)
     | [] -> None
 
 let getLines command = Decode.Auto.fromString<Line list> (rpc.getLines command)
@@ -59,11 +59,8 @@ let drawSelections (command: string) =
     // showError (rpc.getLines command)
     match getLines command with
     | Ok o ->
-        match findCursor o with
-        | Some value ->
-            let pos = Position.Create(0, value)
-            let sel = Selection.Create(pos, pos)
-            window.activeTextEditor.selection <- sel
+        match findCursor o 0 with
+        | Some value -> (window.activeTextEditor.selection <- Selection.Create(value, value))
         | None -> showError "no cursor found"
     | Error e -> showError e
 
@@ -80,8 +77,8 @@ let drawMissingLines (command: string) =
                 |> List.map (fun l -> l.contents)
                 |> List.fold (+) ""
 
-            showError (sprintf "from kak: '%s'" text)
-            showError (sprintf "from code: '%s'" (textAtLine i))
+            // showError (sprintf "from kak: '%s'" text)
+            // showError (sprintf "from code: '%s'" (textAtLine i))
 
             if ((textAtLine i) <> text) then showError "different" else showError "same")
         |> ignore
