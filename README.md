@@ -11,10 +11,25 @@ All other custom configuration should work, at least _in theory_. Plugins might 
 
 # Motivation
 
-I've been trying to find a good code editor for day to day use and haven't really been able to find one.
+I've been [trying to find a good code editor](https://thorlaksson.com/post/its-2019-why-dont-we-have-good-code-editors) for day to day use and haven't really been able to find one.
 VSCode provides the best overall experience, but I want a modal editor so I need to rely on extensions.
 Currently I use the Vim extension for VSCode to simulate Vim, but I like the Kakoune way of doing things so much better.
 Since there's no proper Kakoune mode plugin I decided I might as well just work on it myself!
+
+# Why F#?
+
+I've been wanting to learn a functional language for a long time and while working on this project I came across [Reason](https://reasonml.github.io/) and [Fable](https://fable.io/).
+Reason allows you to transpile OCaml to JavaScript, and Fable does the same for F#.
+Both languages looked like good candidates, but ultimately I decided to go with F# because I liked the structure of the language more than OCaml.
+
+I also wanted to use a functional language for features such as pattern matching, currying, and pipes (`|>` and `<|` in F#).
+I think there are many functions that can be made simpler and smaller by using these constructs.
+
+Type safety is also a consideration, although you do get that with TypeScript, just not to the same extent.
+JavaScript/TypeScript concepts like `undefined`, `null`, and `any` make the type system more complicated than I'd like it to be.
+
+**There are some downsides to this**, particularly in the form of glue code.
+The best example are probably the `src/VSCode.fs` and `src/VSCodeTypes.fs` where I've mapped the part of the VSCode API I use to F# types, and then the `.js` files under `src/` where I keep functions that are more easily implemented in JavaScript than F#.
 
 # Current functionality
 
