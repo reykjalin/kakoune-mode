@@ -1,4 +1,8 @@
 
+const stringify = ( msg ) => {
+    return JSON.stringify( msg );
+};
+
 function getMode( rpcMsg ) {
     const msg = JSON.parse( rpcMsg );
     const params = msg.params || [];
@@ -16,10 +20,11 @@ function getMethod( rpcMsg ) {
 function getLines( rpcMsg ) {
     const msg = JSON.parse( rpcMsg );
     const params = msg.params || [];
-    return JSON.stringify( params[ 0 ] || [] );
+    return stringify( params[ 0 ] || [] );
 }
 
 module.exports = {
+    stringify,
     getMethod,
     getMode,
     getLines,

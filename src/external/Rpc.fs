@@ -1,7 +1,5 @@
 module Rpc
 
-open Fable.Core.JsInterop
-open Fable.Import
 open Fable.Core
 
 open Kakoune
@@ -14,6 +12,7 @@ type RpcMessage =
       ``params``: KeysRpcMessage }
 
 type IRpc =
+    abstract stringify: rpcMsg:RpcMessage -> string
     abstract getMethod: rpcMsg:string -> string
     abstract getMode: rpcMsg:string -> string
     abstract getLines: rpcMsg:string -> string

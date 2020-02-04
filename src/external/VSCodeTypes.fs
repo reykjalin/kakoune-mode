@@ -3,6 +3,9 @@ module VSCodeTypes
 open Fable.Core.JS
 open Fable.Core
 
+type IVSCodeUri =
+    abstract toString: unit -> string
+
 type IVSCodePosition =
     abstract character: int with get, set
     abstract line: int with get, set
@@ -21,9 +24,6 @@ type IVScodeSelectionStatic =
     [<Emit("new $0($1, $2)")>]
     abstract Create: IVSCodePosition * IVSCodePosition -> IVSCodeSelection
 
-type IVSCodeUri =
-    abstract path: string
-
 type IVSCodeTextEdit =
     abstract newText: string
 
@@ -38,6 +38,10 @@ type IVSCodeWorkspaceEditStatic =
     [<Emit("new $0()")>]
     abstract Create: unit -> IVSCodeWorkspaceEdit
 
+type IVSCodeExtensionContext =
+    abstract extensionPath: string
+    abstract subscriptions: ResizeArray<obj>
+
 type IVSCodeWorkspace =
     abstract name: string with get, set
     abstract rootPath: string with get, set
@@ -48,6 +52,8 @@ type IVSCodeTextLine =
     abstract text: string
 
 type IVSCodeTextDocument =
+    abstract fileName: string
+    abstract uri: IVSCodeUri
     abstract lineAt: int -> IVSCodeTextLine
 
 type IVScodeTextEditor =
@@ -59,5 +65,10 @@ type IVSCodeWindow =
     abstract showErrorMessage: message:string -> unit
     abstract activeTextEditor: IVScodeTextEditor with get, set
 
+type IVSCodeCommands =
+    abstract registerCommand: string * (unit -> unit) -> unit
+    abstract executeCommand: string * ResizeArray<'a> -> unit
+
 type IVSCode =
     abstract window: IVSCodeWindow with get, set
+    abstract commands: IVSCodeCommands

@@ -4,6 +4,9 @@ NUGET
   remote: https://api.nuget.org/v3/index.json
     Fable.Core (3.1.4)
       FSharp.Core (>= 4.7)
+    Fable.Node (1.0.2)
+      Fable.Core (>= 3.1.2)
+      FSharp.Core (>= 4.7)
     FSharp.Core (4.7)
     Thoth.Json (3.5)
       Fable.Core (>= 3.1.4)
