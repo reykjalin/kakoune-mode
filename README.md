@@ -1,4 +1,4 @@
-# kakoune-mode README
+# Kakoune mode
 
 **WARNING: This VSCode extension is still under heavy development and should only be considered ready for testing. It is _not_ ready for real use.**
 
@@ -30,6 +30,27 @@ JavaScript/TypeScript concepts like `undefined`, `null`, and `any` make the type
 
 **There are some downsides to this**, particularly in the form of glue code.
 The best example are probably the `src/VSCode.fs` and `src/VSCodeTypes.fs` where I've mapped the part of the VSCode API I use to F# types, and then the `.js` files under `src/` where I keep functions that are more easily implemented in JavaScript than F#.
+
+# Build instructions
+
+You'll need to have `npm` and `dotnet` installed.
+
+## Script to paste into your shell of choice
+
+```sh
+dotnet tool restore
+dotnet paket restore
+dotnet paket install
+npm install
+npm run build
+```
+
+## Detailed instructions
+
+First you'll want to install [Paket](https://fsprojects.github.io/Paket/get-started.html) for managing the Fable packages.
+Once you've installed paket you can run `dotnet tool restore && dotnet paket restore && dotnet paket install` to install the necessary Fable packages.
+
+Finally, it's a pretty standard npm build process: `npm install && npm run build` to transpile the F# code to JS.
 
 # Current functionality
 
