@@ -28,11 +28,6 @@ let activeTextEditor = window.activeTextEditor
 
 let showError (error: string) = window.showErrorMessage error
 
-let findCursorInAtom (atom: Atom) =
-    match atom.face.fg with
-    | "white" -> ()
-    | _ -> ()
-
 let atomHasCursor (atom: Atom) = atom.face.fg = "black"
 
 let rec findCursorInLine (line: Line) =

@@ -52,13 +52,17 @@ let separateCommands (cmd: string) =
     cmd.Split [| '\n' |]
     |> Array.toList
     |> List.filter (fun cmd -> not (cmd.Equals("")))
-    |> parseCommands
 
 let handleCommand command =
-    let commandStr = sprintf "%s" command
-    printfn "%s" commandStr
+    // Print a variable, then return it.
+    let p c =
+        printfn "%s" c
+        c
 
-    separateCommands commandStr
+    sprintf "%s" command
+    |> p
+    |> separateCommands
+    |> parseCommands
 
 let handleError error = showError (sprintf "Kakoune mode encountered an error: %s" error)
 
@@ -80,10 +84,8 @@ let activate (context: IVSCodeExtensionContext) =
     helpers.setCursorStyleToBlock activeTextEditor
     helpers.overrideTypeCommand (context, getMode, writeToKak)
 
-    let sendEscape = vscode.commands.registerCommand ("extension.send_escape", sendEscape)
-    context.subscriptions.Add sendEscape
-    let sendBackspace = vscode.commands.registerCommand ("extension.send_backspace", sendBackspace)
-    context.subscriptions.Add sendBackspace
+    vscode.commands.registerCommand ("extension.send_escape", sendEscape) |> context.subscriptions.Add
+    vscode.commands.registerCommand ("extension.send_backspace", sendBackspace) |> context.subscriptions.Add
 
     helpers.registerWindowChangeEventHandler writeToKak
 
