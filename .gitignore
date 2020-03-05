@@ -8,3 +8,7 @@ node_modules
 
 src/bin
 src/obj
+
+.merlin
+lib/
+*.bs.js
