@@ -1,12 +1,15 @@
+[@bs.module] external vscode: Js.t({..}) = "vscode";
+
 type disposable;
 type textEditor;
 type uri = {toString: (. unit) => string};
-type textDocument = {uri};
+type textDocument = {
+  uri,
+  fileName: string,
+};
 type textCommandArgs = {text: option(string)};
 
 type extension_context = {subscriptions: array(disposable)};
-
-[@bs.module] external vscode: Js.t({..}) = "vscode";
 
 module Commands = {
   let registerCommand: (string, 'a => unit) => disposable =
@@ -33,22 +36,16 @@ module TextEditor = {
 
 let overrideCommand = (context, command, callback) => {
   Commands.registerCommand(command, args => {
-    switch (Window.activeTextEditor()) {
+    switch (TextEditor.document()) {
     | None => ()
-    | Some(_) =>
-      switch (TextEditor.document()) {
-      | None => ()
-      | Some(document) =>
-        switch (document.uri.toString(.)) {
-        | "debug:input" =>
-          Commands.executeCommandWithArg("default:" ++ command, args)
-        | _ =>
-          switch (Mode.getMode()) {
-          | Mode.Insert =>
-            Commands.executeCommandWithArg("default:" ++ command, args)
-          | Mode.Normal => callback(args)
-          }
-        }
+    | Some(document) =>
+      switch (document.uri.toString(.), Mode.getMode()) {
+      | ("debug:input", _currentMode) =>
+        Commands.executeCommandWithArg("default:" ++ command, args)
+      | (_documentUri, Mode.Insert) =>
+        Commands.executeCommandWithArg("default:" ++ command, args);
+        callback(args);
+      | _ => callback(args)
       }
     }
   })
