@@ -59,7 +59,7 @@ let getModeFromModeLine = modeLine => {
   };
 };
 
-let pmsg = msg => {
+let processCommand = msg => {
   switch (msg |> Json.parseOrRaise |> Decode.msg |> getMethod) {
   | "draw" => Js.log("do draw")
   | "draw_status" =>
@@ -77,7 +77,7 @@ let pmsg = msg => {
 let handleIncomingError = error => error |> Bytes.to_string |> Js.log;
 
 let handleIncomingCommand = command =>
-  command |> Bytes.to_string |> String.split_on_char('\n') |> List.iter(pmsg);
+  command |> Bytes.to_string |> String.split_on_char('\n') |> List.iter(processCommand);
 
 let kak = ref(Node.spawn("kak", [|"-clear"|]));
 
