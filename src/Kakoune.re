@@ -145,8 +145,7 @@ let processCommand = msg => {
         draw
         |> getLinesFromDraw
         |> List.mapi(findSelection)
-        |> List.map(setCursor)
-        |> ignore
+        |> List.iter(setCursor)
       };
     | Mode.Insert => "Nothing to do" |> Js.log
     }
