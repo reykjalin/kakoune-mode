@@ -42,6 +42,9 @@ Most of this code still looks like Reason, which was not the case with F#.
 
 # Build instructions
 
+`kak` **needs** to be available in your `PATH`.
+You can find installation instructions for Kakoune in the [GitHub repository](https://github.com/mawww/kakoune#22-installing).
+
 You'll need to have `npm` or `yarn` installed.
 
 ## Script to paste into your shell of choice
