@@ -1,17 +1,17 @@
 let activate = context => {
+  Node.spawn("kak", [|"-clear"|]) |> Kakoune.setKak;
   switch (Vscode.TextEditor.document()) {
   | None =>
-    Kakoune.setKak(Node.spawn("kak", [|"-ui", "json", "-s", "vscode"|]))
+    Node.spawn("kak", [|"-ui", "json", "-s", "vscode"|]) |> Kakoune.setKak
   | Some(doc) =>
-    Kakoune.setKak(
-      Node.spawn("kak", [|"-ui", "json", "-s", "vscode", doc.fileName|]),
-    )
+    Node.spawn("kak", [|"-ui", "json", "-s", "vscode", doc.fileName|])
+    |> Kakoune.setKak
   };
 
   Kakoune.getKak().stderr.on(. "data", Kakoune.handleIncomingError);
   Kakoune.getKak().stdout.on(. "data", Kakoune.handleIncomingCommand);
 
-  Vscode.overrideTypeCommand(context);
+  Vscode.overrideTypeCommand(context, Kakoune.writeToKak);
   Vscode.TextEditor.Block |> Vscode.setCursorStyle;
 
   Vscode.Commands.registerCommand("extension.send_escape", () =>
@@ -35,5 +35,5 @@ let activate = context => {
   |> Js.Array2.push(context.subscriptions)
   |> ignore;
 
-  Vscode.registerWindowChangeEventHandler();
+  Vscode.registerWindowChangeEventHandler(Kakoune.writeToKak);
 };
