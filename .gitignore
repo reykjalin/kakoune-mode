@@ -1,13 +1,6 @@
-out
 node_modules
 .vscode-test/
 *.vsix
-
-.ionide
-.paket
-
-src/bin
-src/obj
 
 .merlin
 lib/
