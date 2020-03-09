@@ -1,0 +1,14 @@
+{
+    "name": "kakoune-mode",
+    "sources": [
+        "src"
+    ],
+    "package-specs": {
+        "module": "commonjs",
+        "in-source": true
+    },
+    "bs-dependencies": [
+        "@glennsl/bs-json"
+    ],
+    "suffix": ".bs.js"
+}

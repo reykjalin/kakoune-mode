@@ -12,7 +12,7 @@
 	"activationEvents": [
 		"*"
 	],
-	"main": "./out/Extension.js",
+	"main": "./src/Extension.bs.js",
 	"contributes": {
 		"commands": [
 			{
@@ -36,25 +36,26 @@
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "npm run build",
-		"watch": "npm run build -- --watch",
+		"watch": "npm run build -- -w",
 		"pretest": "npm run compile",
 		"test": "node ./out/test/runTest.js",
-		"build": "fable-splitter --config splitter.config.js --commonjs",
-		"lint": "tslint -p ./tsconfig.json"
+		"build": "bsb -make-world",
+		"lint": "tslint -p ./tsconfig.json",
+		"clean": "bsb -clean-world"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.1",
 		"@types/mocha": "^5.2.6",
 		"@types/node": "^10.12.21",
 		"@types/vscode": "^1.41.0",
-		"fable-compiler": "^2.4.12",
-		"fable-compiler-js": "^1.2.1",
-		"fable-splitter": "^2.1.12",
+		"bs-platform": "^7.1.1",
 		"glob": "^7.1.4",
 		"mocha": "^6.1.4",
 		"tslint": "^5.12.1",
 		"typescript": "^3.3.1",
 		"vscode-test": "^1.2.0"
 	},
-	"dependencies": {}
+	"dependencies": {
+		"@glennsl/bs-json": "^5.0.2"
+	}
 }

@@ -16,41 +16,40 @@ VSCode provides the best overall experience, but I want a modal editor so I need
 Currently I use the Vim extension for VSCode to simulate Vim, but I like the Kakoune way of doing things so much better.
 Since there's no proper Kakoune mode plugin I decided I might as well just work on it myself!
 
-# Why F#?
+# Why Reason?
 
 I've been wanting to learn a functional language for a long time and while working on this project I came across [Reason](https://reasonml.github.io/) and [Fable](https://fable.io/).
-Reason allows you to transpile OCaml to JavaScript, and Fable does the same for F#.
-Both languages looked like good candidates, but ultimately I decided to go with F# because I liked the structure of the language more than OCaml.
+Reason allows you to compile OCaml to JavaScript, and Fable compiles F# to JavaScript.
+Both languages looked like good candidates, and at first I decided to go with F# because I liked the structure and syntax of the language more than OCaml and Reason.
 
-I also wanted to use a functional language for features such as pattern matching, currying, and pipes (`|>` and `<|` in F#).
-I think there are many functions that can be made simpler and smaller by using these constructs.
+However, after using Fable for a bit, I felt that the documentation was [a bit lacking](https://thorlaksson.com/post/calling-fable-from-typescript), and the JavaScript interoperability, while usable, isn't great.
+So I tried to use Reason, and I find the JavaScript interop much more user friendly and terse.
+The codebase in Reason is a bit smaller, mostly thanks to less glue code for JavaScript interop.
 
-Type safety is also a consideration, although you do get that with TypeScript, just not to the same extent.
+The Reason tooling is also much better.
+The F# tooling for VSCode can feel a bit slow, often taking ~1sec to think for auto-completions and types, and you need to compile manually (or use a watcher) while developing.
+The Reason tooling is relatively fast, auto-completions come in instantly, and the toolchain is fast enough to **recompile automatically after every save**, which is an immense productivity boost.
+
+My reason for looking into these 2 frameworks is that I wanted to use a functional language for features such as pattern matching, currying, and pipes (`|>` and `->` in Reason).
+I think there are many functions that can be made simpler and smaller by using these constructs and unfortunately JavaScript isn't optimal for this; it's more difficult to write functional code in JavaScript than it is to write imperative code.
+
+Type safety is also a big consideration, although you do get that with TypeScript, just not to the same extent.
 JavaScript/TypeScript concepts like `undefined`, `null`, and `any` make the type system more complicated than I'd like it to be.
 
 **There are some downsides to this**, particularly in the form of glue code.
-The best example are probably the `src/VSCode.fs` and `src/VSCodeTypes.fs` where I've mapped the part of the VSCode API I use to F# types, and then the `.js` files under `src/` where I keep functions that are more easily implemented in JavaScript than F#.
+The best example is probably `src/VSCode.re` where I've mapped the part of the VSCode API I use to Reason types.
+Most of this code still looks like Reason, which was not the case with F#.
 
 # Build instructions
 
-You'll need to have `npm` and `dotnet` installed.
+You'll need to have `npm` or `yarn` installed.
 
 ## Script to paste into your shell of choice
 
 ```sh
-dotnet tool restore
-dotnet paket restore
-dotnet paket install
 npm install
 npm run build
 ```
-
-## Detailed instructions
-
-First you'll want to install [Paket](https://fsprojects.github.io/Paket/get-started.html) for managing the Fable packages.
-Once you've installed paket you can run `dotnet tool restore && dotnet paket restore && dotnet paket install` to install the necessary Fable packages.
-
-Finally, it's a pretty standard npm build process: `npm install && npm run build` to transpile the F# code to JS.
 
 # Current functionality
 
@@ -59,7 +58,8 @@ Finally, it's a pretty standard npm build process: `npm install && npm run build
 
 # Upcoming functionality
 
-1. Sync text from Kakoune to VSCode after changes.
 1. Correct primary selection.
 1. Correct multiple selections.
+1. Sync text from Kakoune to VSCode after changes.
 1. Change every instance of selected text.
+1. Search and replace.
