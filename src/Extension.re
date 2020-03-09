@@ -7,14 +7,23 @@ let activate = context => {
   Vscode.overrideTypeCommand(context);
 
   Vscode.Commands.registerCommand("extension.send_escape", () =>
-    Js.log("escape")
+    Rpc.createKeysMessage("<esc>")
+    |> Rpc.stringifyMessage
+    |> Kakoune.writeToKak
   )
   |> Js.Array2.push(context.subscriptions)
   |> ignore;
 
-  Vscode.Commands.registerCommand("extension.send_backspace", () =>
-    Js.log("backspace")
-  )
+  Vscode.Commands.registerCommand("extension.send_backspace", () => {
+    switch (Mode.getMode()) {
+    | Mode.Insert => Vscode.Commands.executeCommand("deleteLeft")
+    | _ => ()
+    };
+
+    Rpc.createKeysMessage("<backspace>")
+    |> Rpc.stringifyMessage
+    |> Kakoune.writeToKak;
+  })
   |> Js.Array2.push(context.subscriptions)
   |> ignore;
 };

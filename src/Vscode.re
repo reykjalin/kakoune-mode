@@ -12,6 +12,9 @@ module Commands = {
   let registerCommand: (string, 'a => unit) => disposable =
     (name, callback) => vscode##commands##registerCommand(name, callback);
 
+  let executeCommand: string => unit =
+    command => vscode##commands##executeCommand(command);
+
   let executeCommandWithArg: (string, textCommandArgs) => unit =
     (command, arg) => vscode##commands##executeCommand(command, arg);
 };
@@ -57,10 +60,7 @@ let overrideTypeCommand = context => {
   overrideCommand(context, "type", args => {
     switch (args.text) {
     | Some(t) =>
-      Rpc.createKeysMessage(t)
-      |> Rpc.Encode.keysMessage
-      |> Json.stringify
-      |> Kakoune.writeToKak
+      Rpc.createKeysMessage(t) |> Rpc.stringifyMessage |> Kakoune.writeToKak
     | None => ()
     }
   });

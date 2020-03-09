@@ -19,3 +19,7 @@ module Encode = {
       ])
     );
 };
+
+let stringifyMessage = msg => {
+  msg |> Encode.keysMessage |> Json.stringify;
+};
