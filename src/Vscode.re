@@ -1,13 +1,13 @@
 [@bs.module] external vscode: Js.t({..}) = "vscode";
 
 type disposable;
-type textEditor;
 type uri = {toString: (. unit) => string};
 type textDocument = {
   uri,
   fileName: string,
 };
 type textCommandArgs = {text: option(string)};
+type textEditor = {document: textDocument};
 
 type extension_context = {subscriptions: array(disposable)};
 
@@ -20,11 +20,6 @@ module Commands = {
 
   let executeCommandWithArg: (string, textCommandArgs) => unit =
     (command, arg) => vscode##commands##executeCommand(command, arg);
-};
-
-module Window = {
-  let activeTextEditor: unit => option(textEditor) =
-    () => Js.toOption(vscode##window##activeTextEditor);
 };
 
 module TextEditor = {
@@ -46,6 +41,16 @@ module TextEditor = {
 
   let document: unit => option(textDocument) =
     () => Js.toOption(vscode##window##activeTextEditor##document);
+};
+
+module Window = {
+  type event('a) = option('a);
+
+  let activeTextEditor: unit => option(textEditor) =
+    () => Js.toOption(vscode##window##activeTextEditor);
+
+  let onDidChangeActiveTextEditor: (event(TextEditor.t) => unit) => unit =
+    event => vscode##window##onDidChangeActiveTextEditor(event);
 };
 
 let overrideCommand = (context, command, callback) => {
@@ -73,6 +78,18 @@ let overrideTypeCommand = context => {
     | Some(t) =>
       Rpc.createKeysMessage(t) |> Rpc.stringifyMessage |> Kakoune.writeToKak
     | None => ()
+    }
+  });
+};
+
+let registerWindowChangeEventHandler = () => {
+  Window.onDidChangeActiveTextEditor(event => {
+    switch (event) {
+    | None => ()
+    | Some(e) =>
+      Rpc.createKeysMessage(":e " ++ e.document.fileName ++ "<ret>")
+      |> Rpc.stringifyMessage
+      |> Kakoune.writeToKak
     }
   });
 };

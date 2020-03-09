@@ -34,4 +34,6 @@ let activate = context => {
   })
   |> Js.Array2.push(context.subscriptions)
   |> ignore;
+
+  Vscode.registerWindowChangeEventHandler();
 };
