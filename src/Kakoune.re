@@ -82,18 +82,8 @@ let getLinesFromDraw = (drawCommand: drawCommand) => {
   lines;
 };
 
-let rec findIndexOfAtom =
-        (~line: line, ~test: atom => bool, ~index: int=0, ()): option(int) =>
-  index >= List.length(line)
-    ? None
-    : {
-      let atom = index |> List.nth(line);
-      test(atom)
-        ? Some(index) : findIndexOfAtom(~line, ~test, ~index=index + 1, ());
-    };
-
-let findIndexOfCursor = (line: line, indexOfAtom) => {
-  switch (line->Belt.List.take(indexOfAtom)) {
+let findIndexOfCursor = (line: line, indexOfAtom, inclusive) => {
+  switch (line->Belt.List.take(inclusive ? indexOfAtom + 1 : indexOfAtom)) {
   | Some(l) =>
     Some(
       l->Belt.List.reduce(0, (acc, a) => acc + (a.contents |> String.length)),
@@ -102,25 +92,47 @@ let findIndexOfCursor = (line: line, indexOfAtom) => {
   };
 };
 
-let findCursor = (row, line: line) => {
-  switch (findIndexOfAtom(~line, ~test=atom => "black" === atom.face.fg, ())) {
-  | Some(i) =>
-    switch (findIndexOfCursor(line, i)) {
-    | Some(character) => Some(Vscode.Position.make(~line=row, ~character))
-    | None => None
-    }
+let findSelection = (lineNumber, line: line) => {
+  let cursorAtom =
+    ListUtil.findIndexOf(~l=line, ~f=atom => "black" === atom.face.fg, ());
+  switch (cursorAtom) {
   | None => None
+  | Some(ca) =>
+    let selectionAtom =
+      ListUtil.findIndexOf(~l=line, ~f=atom => "white" === atom.face.fg, ());
+
+    switch (selectionAtom) {
+    | None =>
+      switch (findIndexOfCursor(line, ca, false)) {
+      | None => None
+      | Some(ci) =>
+        let p = Vscode.Position.make(~line=lineNumber, ~character=ci);
+        Some(Vscode.Selection.make(~anchor=p, ~active=p));
+      }
+    | Some(sa) =>
+      switch (
+        findIndexOfCursor(line, ca, false),
+        findIndexOfCursor(line, sa, sa > ca),
+      ) {
+      | (Some(ci), Some(si)) =>
+        let startPos = Vscode.Position.make(~line=lineNumber, ~character=ci);
+        let endPos = Vscode.Position.make(~line=lineNumber, ~character=si);
+        startPos |> Js.log;
+        endPos |> Js.log;
+        Some(Vscode.Selection.make(~anchor=endPos, ~active=startPos));
+      | (_, _) =>
+        "Can't find both" |> Js.log;
+        None;
+      }
+    };
   };
 };
 
-let setCursor = position => {
-  switch (position) {
-  | Some(p) =>
+let setCursor = selection => {
+  switch (selection) {
+  | Some(s) =>
     switch (Vscode.Window.activeTextEditor()) {
-    | Some(ed) =>
-      ed->Vscode.TextEditor.setSelection(
-        Vscode.Selection.make(~anchor=p, ~active=p),
-      )
+    | Some(ed) => ed->Vscode.TextEditor.setSelection(s)
     | None => ()
     }
   | None => ()
@@ -140,7 +152,7 @@ let processCommand = msg => {
       | draw =>
         draw
         |> getLinesFromDraw
-        |> List.mapi(findCursor)
+        |> List.mapi(findSelection)
         |> List.map(setCursor)
       };
     | Mode.Insert =>
