@@ -12,6 +12,7 @@ let activate = context => {
   Kakoune.getKak().stdout.on(. "data", Kakoune.handleIncomingCommand);
 
   Vscode.overrideTypeCommand(context);
+  Vscode.TextEditor.Block |> Vscode.setCursorStyle;
 
   Vscode.Commands.registerCommand("extension.send_escape", () =>
     Rpc.createKeysMessage("<esc>")

@@ -30,6 +30,20 @@ module Window = {
 module TextEditor = {
   type t = textEditor;
 
+  [@bs.deriving jsConverter]
+  type cursorStyle =
+    | [@bs.as 1] Line
+    | [@bs.as 2] Block
+    | [@bs.as 3] Underline
+    | [@bs.as 4] LineThin
+    | [@bs.as 5] BlockOutline
+    | [@bs.as 6] UnderlineThin;
+
+  type textEditorOptions = {mutable cursorStyle: int};
+
+  let options: unit => option(textEditorOptions) =
+    () => Js.toOption(vscode##window##activeTextEditor##options);
+
   let document: unit => option(textDocument) =
     () => Js.toOption(vscode##window##activeTextEditor##document);
 };
@@ -61,4 +75,11 @@ let overrideTypeCommand = context => {
     | None => ()
     }
   });
+};
+
+let setCursorStyle = style => {
+  switch (TextEditor.options()) {
+  | None => ()
+  | Some(o) => o.cursorStyle = style |> TextEditor.cursorStyleToJs
+  };
 };
