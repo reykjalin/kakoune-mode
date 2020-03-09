@@ -55,5 +55,7 @@
 		"typescript": "^3.3.1",
 		"vscode-test": "^1.2.0"
 	},
-	"dependencies": {}
+	"dependencies": {
+		"@glennsl/bs-json": "^5.0.2"
+	}
 }
