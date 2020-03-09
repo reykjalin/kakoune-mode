@@ -26,10 +26,8 @@ type drawCommand = (
   face /* padding_face */,
 );
 
-type msg = {method: string};
-
 module Decode = {
-  let msg = json => Json.Decode.{method: json |> field("method", string)};
+  let method = json => Json.Decode.(json |> field("method", string));
 
   let face = json =>
     Json.Decode.{
@@ -58,8 +56,6 @@ module Decode = {
   let drawCommand = json =>
     Json.Decode.(json |> field("params", tuple3(list(line), face, face)));
 };
-
-let getMethod = msg => msg.method;
 
 let getModeFromModeLine = modeLine => {
   switch (
@@ -120,9 +116,7 @@ let findSelection = (lineNumber, line: line) => {
         startPos |> Js.log;
         endPos |> Js.log;
         Some(Vscode.Selection.make(~anchor=endPos, ~active=startPos));
-      | (_, _) =>
-        "Can't find both" |> Js.log;
-        None;
+      | (_, _) => None
       }
     };
   };
@@ -140,42 +134,31 @@ let setCursor = selection => {
 };
 
 let processCommand = msg => {
-  switch (msg |> Json.parseOrRaise |> Decode.msg |> getMethod) {
+  switch (msg |> Json.parseOrRaise |> Decode.method) {
   | "draw" =>
     switch (Mode.getMode()) {
     | Mode.Normal =>
       "Perform draw" |> Js.log;
       switch (msg |> Json.parseOrRaise |> Decode.drawCommand) {
-      | exception (Json.Decode.DecodeError(e)) =>
-        e |> Js.log;
-        [];
+      | exception (Json.Decode.DecodeError(e)) => e |> Js.log
       | draw =>
         draw
         |> getLinesFromDraw
         |> List.mapi(findSelection)
         |> List.map(setCursor)
+        |> ignore
       };
-    | Mode.Insert =>
-      "Nothing to do" |> Js.log;
-      [];
+    | Mode.Insert => "Nothing to do" |> Js.log
     }
   | "draw_status" =>
     "process current mode" |> Js.log;
 
     switch (msg |> Json.parseOrRaise |> Decode.drawStatusCommand) {
-    | dsc =>
-      getModeFromDrawStatus(dsc) |> Mode.setMode;
-      [];
-    | exception (Json.Decode.DecodeError(e)) =>
-      Js.log(e);
-      [];
+    | dsc => getModeFromDrawStatus(dsc) |> Mode.setMode
+    | exception (Json.Decode.DecodeError(e)) => e |> Js.log
     };
-  | exception (Json.Decode.DecodeError(e)) =>
-    Js.log(e);
-    [];
-  | _ =>
-    Js.log("other");
-    [];
+  | exception (Json.Decode.DecodeError(e)) => e |> Js.log
+  | _ => ()
   };
 };
 let handleIncomingError = error => error |> Bytes.to_string |> Js.log;
