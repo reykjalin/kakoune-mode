@@ -50,6 +50,8 @@ module TextEditor = {
     () => Js.toOption(vscode##window##activeTextEditor##document);
 
   [@bs.set] external setSelection: (t, selection) => unit = "selection";
+  [@bs.set]
+  external setSelections: (t, array(selection)) => unit = "selections";
 };
 
 module Window = {
@@ -130,5 +132,12 @@ let setCursorStyle = style => {
   switch (TextEditor.options()) {
   | None => ()
   | Some(o) => o.cursorStyle = style |> TextEditor.cursorStyleToJs
+  };
+};
+
+let setSelections = selections => {
+  switch (Window.activeTextEditor()) {
+  | Some(ed) => ed->TextEditor.setSelections(selections)
+  | None => ()
   };
 };

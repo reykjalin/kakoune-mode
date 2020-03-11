@@ -9,6 +9,15 @@ Once you exit insert mode, the VSCode view is synced back up with Kakoune.
 Because Kakoune is used in the background, user defined functions _should_ work. As an example, custom keybindings — e.g. a custom keybinding to exit insert mode — will work by simply modifying the `.config/kak/kakrc` file.
 All other custom configuration should work, at least _in theory_. Plugins might not work, depending on what kind of functionality they provide.
 
+# Table of Contents
+
+- [Motivation](#motivation)
+- [Why Reason?](#why-reason)
+- [Build Instructions](#build-instructions)
+    - [Script to paste into your shell of choice](#script-to-paste-into-your-shell-of-choice)
+- [Current functionality](#current-functionality)
+- [Upcoming functionality](#upcoming-functionality)
+
 # Motivation
 
 I've been [trying to find a good code editor](https://thorlaksson.com/post/its-2019-why-dont-we-have-good-code-editors) for day to day use and haven't really been able to find one.
@@ -57,12 +66,12 @@ npm run build
 # Current functionality
 
 - You can open a file.
-- The cursor can be moved around with the standard movement keys for Kakoune.
+- Selections are fully functional.
 
 # Upcoming functionality
 
-1. Correct primary selection.
-1. Correct multiple selections.
 1. Sync text from Kakoune to VSCode after changes.
 1. Change every instance of selected text.
 1. Search and replace.
+1. Show pop up (Ctrl+P like menu) during search and `:` commands.
+    - Show suggestions from the Kakoune clippy in pop up.
