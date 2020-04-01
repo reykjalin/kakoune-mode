@@ -1,26 +1,25 @@
 let activate = context => {
-  Node.spawn("kak", [|"-clear"|]) |> Kakoune.setKak;
+  Node.spawn("kak", [|"-clear"|])->Kakoune.setKak;
+
   switch (Vscode.TextEditor.document()) {
   | None =>
-    Node.spawn("kak", [|"-ui", "json", "-s", "vscode"|]) |> Kakoune.setKak
+    Node.spawn("kak", [|"-ui", "json", "-s", "vscode"|])->Kakoune.setKak
   | Some(doc) =>
     Node.spawn("kak", [|"-ui", "json", "-s", "vscode", doc.fileName|])
-    |> Kakoune.setKak
+    ->Kakoune.setKak
   };
 
   Kakoune.getKak().stderr.on(. "data", Kakoune.handleIncomingError);
   Kakoune.getKak().stdout.on(. "data", Kakoune.handleIncomingCommand);
 
   Vscode.overrideTypeCommand(context, Kakoune.writeToKak);
-  Vscode.TextEditor.Block |> Vscode.setCursorStyle;
+  Vscode.setCursorStyle(Vscode.TextEditor.Block);
 
   Vscode.Commands.registerCommand("extension.send_escape", () =>
-    Rpc.createKeysMessage("<esc>")
-    |> Rpc.stringifyMessage
-    |> Kakoune.writeToKak
+    Rpc.createKeysMessage("<esc>")->Rpc.stringifyMessage->Kakoune.writeToKak
   )
-  |> Js.Array2.push(context.subscriptions)
-  |> ignore;
+  ->Js.Array.push(context.subscriptions)
+  ->ignore;
 
   Vscode.Commands.registerCommand("extension.send_backspace", () => {
     switch (Mode.getMode()) {
@@ -29,11 +28,11 @@ let activate = context => {
     };
 
     Rpc.createKeysMessage("<backspace>")
-    |> Rpc.stringifyMessage
-    |> Kakoune.writeToKak;
+    ->Rpc.stringifyMessage
+    ->Kakoune.writeToKak;
   })
-  |> Js.Array2.push(context.subscriptions)
-  |> ignore;
+  ->Js.Array.push(context.subscriptions)
+  ->ignore;
 
   Vscode.registerWindowChangeEventHandler(Kakoune.writeToKak);
 };

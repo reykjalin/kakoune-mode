@@ -21,5 +21,5 @@ module Encode = {
 };
 
 let stringifyMessage = msg => {
-  msg |> Encode.keysMessage |> Json.stringify;
+  msg->Encode.keysMessage->Json.stringify;
 };

@@ -102,15 +102,14 @@ let overrideCommand = (context, command, callback) => {
       }
     }
   })
-  |> Js.Array2.push(context.subscriptions)
-  |> ignore;
+  ->Js.Array.push(context.subscriptions)
+  ->ignore;
 };
 
 let overrideTypeCommand = (context, writeToKak) => {
   overrideCommand(context, "type", args => {
     switch (args.text) {
-    | Some(t) =>
-      Rpc.createKeysMessage(t) |> Rpc.stringifyMessage |> writeToKak
+    | Some(t) => t->Rpc.createKeysMessage->Rpc.stringifyMessage->writeToKak
     | None => ()
     }
   });
@@ -122,8 +121,8 @@ let registerWindowChangeEventHandler = writeToKak => {
     | None => ()
     | Some(e) =>
       Rpc.createKeysMessage(":e " ++ e.document.fileName ++ "<ret>")
-      |> Rpc.stringifyMessage
-      |> writeToKak
+      ->Rpc.stringifyMessage
+      ->writeToKak
     }
   });
 };
@@ -131,7 +130,7 @@ let registerWindowChangeEventHandler = writeToKak => {
 let setCursorStyle = style => {
   switch (TextEditor.options()) {
   | None => ()
-  | Some(o) => o.cursorStyle = style |> TextEditor.cursorStyleToJs
+  | Some(o) => o.cursorStyle = style->TextEditor.cursorStyleToJs
   };
 };
 
