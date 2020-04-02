@@ -59,6 +59,101 @@ module Decode = {
     );
 };
 
+module Line = {
+  let (>>=) = (m, f) => {
+    switch (m) {
+    | None => None
+    | Some(v) => f(v)
+    };
+  };
+  let return = t => Some(t);
+
+  let listToArray = l => return(l->Array.of_list);
+
+  let getAtomsBeforeAtomIndex = (line, atomIndex) => {
+    switch (line, atomIndex) {
+    | (Some(l), Some(i)) => l->Belt.List.take(i)
+    | _ => None
+    };
+  };
+
+  let getAtomIndexBy = (line, f) => {
+    line >>= listToArray >>= Belt.Array.getIndexBy(_, f);
+  };
+
+  let getAtomsBeforeAtom = (line, a) => {
+    line
+    ->getAtomIndexBy(atom => Belt.Option.eq(Some(atom), a, (===)))
+    ->getAtomsBeforeAtomIndex(line, _);
+  };
+
+  let getAtomBy = (line, f) => {
+    line >>= Belt.List.getBy(_, f);
+  };
+
+  let reverse = line => {
+    line >>= (l => return(l->Belt.List.reverse));
+  };
+
+  let getText = line => {
+    line
+    >>= (
+      line => {
+        return(
+          line->Belt.List.reduce("", (lineText, atom) =>
+            lineText ++ atom.contents
+          ),
+        );
+      }
+    );
+  };
+
+  let getNumberOfAtoms = line => {
+    line >>= (l => return(l->Belt.List.length));
+  };
+
+  let getLineLength = line => {
+    line
+    >>= (
+      line => {
+        return(
+          line->Belt.List.reduce(0, (lineLength, atom) =>
+            lineLength + String.length(atom.contents)
+          ),
+        );
+      }
+    );
+  };
+};
+
+module Document = {
+  type t = list(line);
+
+  let (>>=) = (m, f) => {
+    switch (m) {
+    | None => None
+    | Some(v) => v->f
+    };
+  };
+
+  let getLine = (lines: t, lineNumber) =>
+    lineNumber >>= Belt.List.get(lines);
+
+  let getLineBy = (lines: t, f) => lines->Belt.List.getBy(f);
+
+  let getLineThatHasAtom = (lines: t, atom) => {
+    atom
+    >>= (
+      a => {
+        lines->getLineBy(l => l->Belt.List.has(a, (===)));
+      }
+    );
+  };
+
+  let getLineIndexBy = (lines: t, f) =>
+    lines->Array.of_list->Belt.Array.getIndexBy(f);
+};
+
 let getModeFromModeLine = modeLine => {
   switch (
     modeLine
@@ -81,7 +176,7 @@ type searchDirection =
 
 type atomPosition = {
   line: int,
-  index: int,
+  atom: int,
 };
 
 let (>>=) = (m, f) => {
@@ -96,23 +191,15 @@ let linesToSelections = lines => {
   let flatLines = lines->Belt.List.flatten;
 
   let getAtom = position => {
-    lines->Belt.List.get(position.line) >>= Belt.List.get(_, position.index);
+    lines->Belt.List.get(position.line) >>= Belt.List.get(_, position.atom);
   };
 
-  let atomPositionToPosition = atomPosition => {
+  let makePosition = atomPosition => {
     let character =
-      (
-        lines->Belt.List.get(_, atomPosition.line)
-        >>= Belt.List.take(_, atomPosition.index)
-        >>= (
-          l =>
-            return(
-              l->Belt.List.reduce(0, (acc, a) =>
-                acc + String.length(a.contents)
-              ),
-            )
-        )
-      )
+      lines
+      ->Belt.List.get(atomPosition.line)
+      ->Line.getAtomsBeforeAtomIndex(Some(atomPosition.atom))
+      ->Line.getLineLength
       ->Belt.Option.getWithDefault(0);
 
     Vscode.Position.make(~line=atomPosition.line, ~character);
@@ -128,203 +215,119 @@ let linesToSelections = lines => {
     (
       atomPosition->getAtom
       >>= (
-        atom =>
-          {
-            flatLines->Array.of_list->Belt.Array.getIndexBy(a => a === atom);
-          }
-          >>= indexToCheck
-          >>= (
-            i =>
-              flatLines->Belt.List.get(i)
-              >>= (atom => return("blue" === atom.face.bg))
-          )
+        atom => {
+          flatLines->Some->Line.getAtomIndexBy(a => a === atom);
+        }
+      )
+      >>= indexToCheck
+      >>= (
+        i =>
+          flatLines->Belt.List.get(i)
+          >>= (atom => return("blue" === atom.face.bg))
       )
     )
     ->Belt.Option.getWithDefault(false);
   };
 
   let cursorAtomPositionsToSelections = atomPositions => {
-    let positionsToSelection = ((start, end_)) => {
+    let makeSelection = ((start, end_)) => {
       Vscode.Selection.make(
-        ~anchor=start->atomPositionToPosition,
-        ~active=end_->atomPositionToPosition,
+        ~anchor=makePosition(start),
+        ~active=makePosition(end_),
       );
     };
 
-    let findSelectionAtomPositions = atomPosition => {
-      let default = (atomPosition, atomPosition);
+    let findSelectionAtomPositions = cursorPosition => {
+      let getAtomPositionWithDefault = (atom, default) => {
+        let startLine = lines->Document.getLineThatHasAtom(atom);
+        let lineIndex =
+          startLine
+          >>= (line => lines->Document.getLineIndexBy(l => l === line));
+        let atomIndex =
+          startLine->Line.getAtomIndexBy(a => {
+            Belt.Option.eq(a->Some, atom, (===))
+          });
+        switch (lineIndex, atomIndex) {
+        | (Some(line), Some(atom)) => {line, atom}
+        | _ => default
+        };
+      };
 
       switch (
-        hasSelection(Left, atomPosition),
-        hasSelection(Right, atomPosition),
+        hasSelection(Left, cursorPosition),
+        hasSelection(Right, cursorPosition),
       ) {
       | (true, false) =>
-        let atomsBeforeCursorReversed =
-          atomPosition->getAtom
-          >>= (
-            cursorAtom =>
-              flatLines
-              ->Array.of_list
-              ->Belt.Array.getIndexBy(atom => atom === cursorAtom)
-              >>= (
-                cursorAtomIndex =>
-                  flatLines->Belt.List.take(cursorAtomIndex)
-                  >>= (
-                    atomsBeforeCursor =>
-                      return(atomsBeforeCursor->Belt.List.reverse)
-                  )
-              )
-          );
+        let flatLines = Belt.List.flatten(lines)->Some;
+        let atomsBeforeSelectionReversed =
+          flatLines
+          ->Line.getAtomsBeforeAtom(cursorPosition->getAtom)
+          ->Line.reverse;
 
-        let atomBeforeCursor =
-          atomsBeforeCursorReversed
-          >>= (l => return(l->Belt.List.reverse) >>= Belt.List.head);
-
-        let anchorAtom =
-          (
-            switch (
-              atomsBeforeCursorReversed
-              >>= Belt.List.getBy(_, atom =>
-                    "default" === atom.face.fg && "default" === atom.face.bg
-                  )
-            ) {
-            | None =>
-              atomsBeforeCursorReversed
-              >>= Belt.List.getBy(_, a => {
-                    Belt.Option.isSome(atomBeforeCursor)
-                    && Belt.Option.eq(Some(a), atomBeforeCursor, (===))
-                  })
-              >>= (
-                selectionStartAtom =>
-                  flatLines
-                  ->Array.of_list
-                  ->Belt.Array.getIndexBy(atom => atom === selectionStartAtom)
-              )
-            | Some(a) =>
-              flatLines
-              ->Array.of_list
-              ->Belt.Array.getIndexBy(atom => atom === a)
-              >>= (i => return(i + 1))
-            }
-          )
-          >>= (i => flatLines->Belt.List.get(i));
-
-        let anchorLine =
-          anchorAtom
-          >>= (
-            anchorAtom =>
-              lines
-              ->Array.of_list
-              ->Belt.Array.getIndexBy(line =>
-                  line->Belt.List.has(anchorAtom, (===))
-                )
-          );
-        let anchorIndex =
-          anchorAtom
-          >>= (
-            anchorAtom =>
-              lines->(lines => anchorLine >>= lines->Belt.List.get)
-              >>= (
-                line =>
-                  return(line->Array.of_list)
-                  >>= Belt.Array.getIndexBy(_, atom => atom === anchorAtom)
-              )
-          );
-
-        switch (anchorLine, anchorIndex) {
-        | (Some(line), Some(index)) => ({line, index}, atomPosition)
-        | _ => default
-        };
+        atomsBeforeSelectionReversed
+        ->Line.getAtomBy(atom => "blue" !== atom.face.bg)
+        ->Line.getAtomsBeforeAtom(atomsBeforeSelectionReversed, _)
+        ->Line.reverse
+        ->Line.getAtomBy(atom => "blue" === atom.face.bg)
+        /* Select first possible atom by default. */
+        ->getAtomPositionWithDefault({line: 0, atom: 0})
+        ->(startPosition => (startPosition, cursorPosition));
       | (false, true) =>
+        let flatLines = Belt.List.flatten(lines)->Some;
         let atomsAfterCursor =
-          atomPosition->getAtom
-          >>= (
-            cursorAtom =>
-              flatLines
-              ->Belt.List.reverse
-              ->Array.of_list
-              ->Belt.Array.getIndexBy(atom => atom === cursorAtom)
-              >>= (
-                cursorAtomReverseIndex =>
-                  flatLines
-                  ->Belt.List.reverse
-                  ->Belt.List.take(cursorAtomReverseIndex)
-                  >>= (
-                    atomsAfterCursorReversed =>
-                      return(atomsAfterCursorReversed->Belt.List.reverse)
-                  )
-              )
-          );
+          flatLines
+          ->Line.reverse
+          ->Line.getAtomsBeforeAtom(cursorPosition->getAtom)
+          ->Line.reverse;
 
-        let anchorAtom =
+        let lastAtomPosition =
+          lines
+          ->Belt.List.length
+          ->(
+              numberOfLines =>
+                lines->Document.getLine(Some(numberOfLines - 1))
+            )
+          ->Line.getLineLength
+          /* Defaults to -1 since we have to add one later on. */
+          ->Belt.Option.getWithDefault(-1);
+
+        let startPosition =
           atomsAfterCursor
-          >>= (
-            l =>
-              {
-                switch (
-                  l->Belt.List.getBy(atom =>
-                    "default" === atom.face.fg && "default" === atom.face.bg
-                  )
-                ) {
-                | None =>
-                  l
-                  ->Belt.List.reverse
-                  ->Belt.List.getBy(atom =>
-                      Belt.Option.eq(Some(atom), l->Belt.List.head, (===))
-                    )
-                  >>= (
-                    a =>
-                      flatLines
-                      ->Array.of_list
-                      ->Belt.Array.getIndexBy(atom => atom === a)
-                  )
-                | Some(a) =>
-                  flatLines
-                  ->Array.of_list
-                  ->Belt.Array.getIndexBy(atom => atom === a)
-                };
-              }
-              >>= (
-                anchorAtomIndex => flatLines->Belt.List.get(anchorAtomIndex)
-              )
-          );
+          ->Line.getAtomBy(atom => "blue" !== atom.face.bg)
+          ->Line.getAtomsBeforeAtom(atomsAfterCursor, _)
+          ->Line.reverse
+          ->Line.getAtomBy(atom => "blue" === atom.face.bg)
+          ->getAtomPositionWithDefault({
+              /* Select the last possible atom by default. */
+              line: lines->Belt.List.length - 1,
+              atom: lastAtomPosition,
+            })
+          /*
+           * Select 1 atom further to make sure the last atom's text is included
+           * when getting the correct character position.
+           */
+          ->(pos => {...pos, atom: pos.atom + 1});
 
-        let anchorLine =
-          anchorAtom
-          >>= (
-            anchorAtom => {
-              lines
-              ->Array.of_list
-              ->Belt.Array.getIndexBy(l =>
-                  l->Belt.List.has(anchorAtom, (===))
-                );
-            }
-          );
-
-        let anchorIndex =
-          anchorAtom
-          >>= (
-            anchorAtom => {
-              lines->(lines => anchorLine >>= lines->Belt.List.get)
-              >>= (
-                line =>
-                  return(line->Array.of_list)
-                  >>= Belt.Array.getIndexBy(_, atom => atom === anchorAtom)
-              );
-            }
-          );
-
-        switch (anchorLine, anchorIndex) {
-        | (Some(line), Some(index)) => ({line, index}, atomPosition)
-        | _ => default
-        };
-      | _ => (atomPosition, atomPosition)
+        (startPosition, cursorPosition);
+      | (true, true) =>
+        /**
+         * Weird edge case where e.g. you select words side-by side.
+         *
+         * Example:
+         * Text in document is: `hello hello world`.
+         * Search for `hello `.
+         *
+         * To handle this, figure out where selections are going (backwards vs forwards)
+         * and use the appropriate method to split the selections correctly.
+         */
+        (cursorPosition, cursorPosition)
+      | _ => (cursorPosition, cursorPosition)
       };
     };
 
     atomPositions
     ->Belt.List.map(findSelectionAtomPositions)
-    ->Belt.List.map(positionsToSelection);
+    ->Belt.List.map(makeSelection);
   };
 
   let findCursorAtomPositionsInLine = (line, lineNumber) => {
@@ -333,7 +336,7 @@ let linesToSelections = lines => {
     ->Belt.List.keep(((_i, a)) =>
         "white" === a.face.bg || "cyan" === a.face.bg
       )
-    ->Belt.List.map(((i, _a)) => {line: lineNumber, index: i});
+    ->Belt.List.map(((i, _a)) => {line: lineNumber, atom: i});
   };
 
   let cursorPositions =
@@ -344,9 +347,14 @@ let linesToSelections = lines => {
   return(cursorPositions->cursorAtomPositionsToSelections->Array.of_list);
 };
 
-let getLinesFromDraw = (drawCommand: drawCommand) => {
-  let (lines, _defaultFace, _paddingFace) = drawCommand;
-  return(lines);
+let getLinesFromDraw = (drawCommand: option(drawCommand)) => {
+  drawCommand
+  >>= (
+    drawCommand => {
+      let (lines, _defaultFace, _paddingFace) = drawCommand;
+      return(lines);
+    }
+  );
 };
 
 let processCommand = msg => {
@@ -354,12 +362,8 @@ let processCommand = msg => {
   | "draw" =>
     switch (Mode.getMode()) {
     | Mode.Normal =>
-      (
-        msg->Json.parse
-        >>= Decode.drawCommand
-        >>= getLinesFromDraw
-        >>= linesToSelections
-      )
+      (msg->Json.parse >>= Decode.drawCommand)
+      ->(drawCommand => getLinesFromDraw(drawCommand) >>= linesToSelections)
       ->Belt.Option.getWithDefault([||])
       ->Vscode.setSelections
     | Mode.Insert => () // Nothing to do.
