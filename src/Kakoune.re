@@ -374,7 +374,8 @@ let processCommand = msg => {
   };
 };
 
-let handleIncomingError = error => error->Bytes.to_string->Js.log;
+let handleIncomingError = error =>
+  error->Bytes.to_string->Vscode.Window.showError;
 
 let handleIncomingCommand = command =>
   command
