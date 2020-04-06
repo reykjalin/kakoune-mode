@@ -1,5 +1,7 @@
 # Kakoune mode
 
+_Issue tracking can be found at [~reykjalin/kakoune-mode](https://todo.sr.ht/~reykjalin/kakoune-mode)._
+
 **WARNING: This VSCode extension is still under heavy development and should only be considered ready for testing. It is _not_ ready for real use.**
 
 Kakoune mode allows you to use the text editor [Kakoune](https://kakoune.org) as the text editing driver instead of VSCode. This extension runs an instance of Kakoune in the background, passess all inputs to Kakoune and only uses VSCode to display the text file.
