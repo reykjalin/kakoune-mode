@@ -5,6 +5,12 @@ type disposable;
 type position;
 type selection;
 
+type range = {
+  start: position,
+  [@bs.as "end"]
+  end_: position,
+};
+
 type uri = {toString: (. unit) => string};
 type textDocument = {
   uri,
@@ -17,6 +23,17 @@ type textEditor = {
 };
 
 type extension_context = {subscriptions: array(disposable)};
+
+type textDocumentContentChangeEvent = {
+  range,
+  rangeLength: int,
+  rangeOffset: int,
+  text: string,
+};
+type textDocumentChangeEvent = {
+  contentChanges: array(textDocumentContentChangeEvent),
+  document: textDocument,
+};
 
 module Commands = {
   let registerCommand: (string, 'a => unit) => disposable =
@@ -67,6 +84,11 @@ module Window = {
     event => vscode##window##onDidChangeActiveTextEditor(event);
 };
 
+module Workspace = {
+  let onDidChangeTextDocument: (textDocumentChangeEvent => unit) => unit =
+    event => vscode##workspace##onDidChangeTextDocument(event);
+};
+
 module Position = {
   type t = position;
 
@@ -107,12 +129,23 @@ let overrideCommand = (context, command, callback) => {
 };
 
 let overrideTypeCommand = (context, writeToKak) => {
-  overrideCommand(context, "type", args => {
-    switch (args.text) {
-    | Some(t) => t->Rpc.createKeysMessage->Rpc.stringifyMessage->writeToKak
-    | None => ()
-    }
-  });
+  overrideCommand(
+    context,
+    "type",
+    args => {
+      Js.log("typing: ");
+      Js.log(args);
+      Mode.Insert === Mode.getMode()
+        ? ()
+        : (
+          switch (args.text) {
+          | Some(t) =>
+            t->Rpc.createKeysMessage->Rpc.stringifyMessage->writeToKak
+          | None => ()
+          }
+        );
+    },
+  );
 };
 
 let registerWindowChangeEventHandler = writeToKak => {
@@ -123,6 +156,41 @@ let registerWindowChangeEventHandler = writeToKak => {
       Rpc.createKeysMessage(":e " ++ e.document.fileName ++ "<ret>")
       ->Rpc.stringifyMessage
       ->writeToKak
+    }
+  });
+};
+
+let registerTextDocumentContentChangeEventHandler = writeToKak => {
+  let extractTextFromEvent = change => {
+    change.text
+    |> (
+      /* Remove replaced characters */
+      text =>
+        change.rangeLength > 0
+          ? Js.String.sliceToEnd(~from=change.rangeLength, text) : text
+    )
+    |> (
+      /* Move inside auto-closed structures */
+      text =>
+        Js.Re.test_([%re "/^[\{\[<\('\"][\"'\)>\]\}]/"], text)
+        || Js.Re.test_([%re "/\\n\s+\\n/"], text)
+          ? text ++ "<left>" : text
+    )
+    /* Move right for every replaced character */
+    |> (text => Js.String.repeat(change.rangeLength, "<right>") ++ text)
+    /* Replace return with the appropriate code */
+    |> Js.String.replace("\n", "<ret>");
+  };
+
+  Workspace.onDidChangeTextDocument(event => {
+    switch (Mode.getMode()) {
+    | Mode.Normal => ()
+    | Mode.Insert =>
+      event.contentChanges
+      ->Belt.Array.map(extractTextFromEvent)
+      ->Belt.Array.map(Rpc.createKeysMessage)
+      ->Belt.Array.map(Rpc.stringifyMessage)
+      ->Belt.Array.forEach(writeToKak)
     }
   });
 };

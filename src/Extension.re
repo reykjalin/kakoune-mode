@@ -35,4 +35,5 @@ let activate = context => {
   ->ignore;
 
   Vscode.registerWindowChangeEventHandler(Kakoune.writeToKak);
+  Vscode.registerTextDocumentContentChangeEventHandler(Kakoune.writeToKak);
 };
